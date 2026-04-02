@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>유니온 포털 | 승리의 여신: 니케</title>
+  <link rel="icon" type="image/png" href="image/foxstar.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ═══════════ 헤더 ═══════════ -->
+<header>
+  <div class="container">
+    <div class="header-top">
+      <div>
+        <div class="header-eyebrow">승리의 여신: 니케 · UNION PORTAL</div>
+        <div class="header-title" id="headerTitle">⬡ 발할라 유니온</div>
+      </div>
+      <a id="kakaoBtn" href="#" target="_blank" class="kakao-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#1a1200">
+          <path d="M12 3C6.48 3 2 6.69 2 11.25c0 2.87 1.76 5.4 4.41 6.95L5.25 21 l3.86-2.06A11.3 11.3 0 0012 19.5c5.52 0 10-3.69 10-8.25S17.52 3 12 3z"/>
+        </svg>
+        가입 문의
+      </a>
+    </div>
+    <nav>
+      <a href="index.html" class="active">홈</a>
+      <a href="raid.html">유니온레이드</a>
+      <a href="solo.html">솔로레이드</a>
+      <a href="shift.html">시프티패드</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ═══════════ 메인 ═══════════ -->
+<main>
+  <div class="container page-content">
+
+    <!-- ① 4개 지표 카드 -->
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-label">평균 싱크로레벨</div>
+        <div class="metric-value blue" id="metricAvgLevel">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">유니온레이드 최근 순위</div>
+        <div class="metric-value" id="metricRank">—</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">유니온레이드 일정</div>
+        <div class="metric-value" id="metricUnionRaid" style="font-size:15px; line-height:1.4;">미정</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">솔로레이드 일정</div>
+        <div class="metric-value" id="metricSoloRaid" style="font-size:15px; line-height:1.4;">미정</div>
+      </div>
+    </div>
+
+    <!-- ② 좌: 유니온 멤버 | 우: 공지사항 + 순위 차트 -->
+    <div class="main-layout">
+
+      <!-- 좌: 유니온 멤버 테이블 -->
+      <div class="card">
+        <div class="section-title">유니온 멤버</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:36px">#</th>
+                <th>닉네임</th>
+                <th>싱크로레벨</th>
+                <th>역할</th>
+                <th style="text-align:center">시프티패드</th>
+              </tr>
+            </thead>
+            <tbody id="memberTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 우: 공지사항 + 순위 차트 -->
+      <div class="right-col">
+
+        <!-- 공지사항 -->
+        <div class="card">
+          <div class="section-title">공지사항</div>
+          <div class="notice-list" id="noticeList"></div>
+          <div class="pagination" id="pagination"></div>
+        </div>
+
+        <!-- 유니온레이드 순위 추이 -->
+        <div class="card">
+          <div class="section-title">유니온레이드 순위 추이</div>
+          <p style="font-size:12px; color:var(--text-dim); margin-top:-8px; margin-bottom:14px;">
+            (최근 5개 시즌)
+          </p>
+          <div id="rankFlow"></div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ═══════════ 데이터 로드 ═══════════ -->
+<script src="data/config.js"></script>
+<script src="data/union.js"></script>
+<script src="data/announcements.js"></script>
+
+<!-- ═══════════ 메인 스크립트 ═══════════ -->
+<script>
+// ─── 기본 설정 적용 ──────────────────────────────────────────────
+document.getElementById("headerTitle").textContent = "⬡ " + CONFIG.unionName;
+document.getElementById("kakaoBtn").href = CONFIG.kakaoUrl;
+document.title = CONFIG.unionName + " | 승리의 여신: 니케";
+
+// ─── 최신/이전 시즌 데이터 (객체 키 구조) ────────────────────────
+const seasonKeys    = Object.keys(UNION).map(Number).sort((a, b) => a - b);
+const latestKey     = seasonKeys[seasonKeys.length - 1];
+const prevKey       = seasonKeys.length >= 2 ? seasonKeys[seasonKeys.length - 2] : null;
+const currentSeason = UNION[latestKey];
+const prevSeason    = prevKey ? UNION[prevKey] : null;
+
+// 이전 시즌 멤버 uid 맵
+const prevMemberMap = {};
+if (prevSeason) {
+  prevSeason.members.forEach(m => { prevMemberMap[m.uid] = m; });
+}
+
+// ─── 지표 계산 ───────────────────────────────────────────────────
+const members    = currentSeason.members;
+const avgLevel   = (members.reduce((s, m) => s + m.syncroLevel, 0) / members.length).toFixed(2);
+
+// rank가 있는 가장 마지막 시즌을 역순으로 탐색
+const rankKey    = [...seasonKeys].reverse().find(k => UNION[k].rank != null);
+const latestRank = rankKey != null ? UNION[rankKey].rank : null;
+
+document.getElementById("metricAvgLevel").textContent = avgLevel;
+document.getElementById("metricRank").textContent     = latestRank != null ? latestRank + "위" : "—";
+
+// 일정 포맷
+const KR_DAYS = ["일","월","화","수","목","금","토"];
+function formatSchedule(s) {
+  if (!s) return "미정";
+  function fmt(str) {
+    const d = new Date(str);
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const da = String(d.getDate()).padStart(2, "0");
+    return y + "-" + mo + "-" + da + " (" + KR_DAYS[d.getDay()] + ")";
+  }
+  return fmt(s.start) + " ~ " + fmt(s.end);
+}
+document.getElementById("metricUnionRaid").textContent = formatSchedule(CONFIG.schedule.unionRaid);
+document.getElementById("metricSoloRaid").textContent  = formatSchedule(CONFIG.schedule.soloRaid);
+
+// ─── 멤버 테이블 렌더링 ──────────────────────────────────────────
+const ROLE_DISPLAY = { Leader: "길마", Officer: "부길마", Member: "일반" };
+const ROLE_BADGE   = { Leader: "badge-leader", Officer: "badge-officer", Member: "badge-member" };
+
+// 싱크로레벨 내림차순, 동일하면 닉네임 가나다순
+const sorted = [...members].sort((a, b) => {
+  if (b.syncroLevel !== a.syncroLevel) return b.syncroLevel - a.syncroLevel;
+  return a.name.localeCompare(b.name, "ko");
+});
+
+const tbody = document.getElementById("memberTableBody");
+sorted.forEach((m, i) => {
+  const role     = m.role || "Member";   // role 미지정 시 Member 기본값
+  const prev     = prevMemberMap[m.uid];
+  const isNew    = prev == null;
+  const diff     = prev != null ? m.syncroLevel - prev.syncroLevel : null;
+  const diffHtml = isNew
+    ? '<span class="level-diff new">(New)</span>'
+    : diff > 0
+      ? '<span class="level-diff up">(+' + diff + ')</span>'
+      : diff < 0
+        ? '<span class="level-diff down">(' + diff + ')</span>'
+        : '<span class="level-diff zero">(+0)</span>';
+
+  const bbUrl     = "https://www.blablalink.com/shiftyspad/nikke-list?openid=29080-" + m.blaBlaLinkUId;
+  const rankClass = i === 0 ? "rank-1" : i < 3 ? "rank-top" : "dim";
+
+  const tr = document.createElement("tr");
+  tr.innerHTML =
+    '<td class="' + rankClass + '">' + (i + 1) + '</td>' +
+    '<td class="primary">' + m.name + '</td>' +
+    '<td><span style="font-weight:600;color:var(--text)">' + m.syncroLevel + '</span> ' + diffHtml + '</td>' +
+    '<td><span class="badge ' + (ROLE_BADGE[role] || "badge-member") + '">' + (ROLE_DISPLAY[role] || "일반") + '</span></td>' +
+    '<td class="center"><a href="' + bbUrl + '" target="_blank" class="bblink" title="시프티패드 프로필 보기">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>' +
+        '<circle cx="12" cy="7" r="4"/>' +
+      '</svg>' +
+    '</a></td>';
+  tbody.appendChild(tr);
+});
+
+// ─── 공지사항 (페이지네이션) ────────────────────────────────────
+// 최신글이 마지막 인덱스에 있으므로 reverse 후 정렬
+const pinned    = [...ANNOUNCEMENTS].filter(a => a.pinned).reverse();
+const notPinned = [...ANNOUNCEMENTS].filter(a => !a.pinned).reverse();
+const allNotices = [...pinned, ...notPinned];
+
+const CAT_LABEL = { union:"유니온", ingame:"인게임", guide:"공략", notice:"공지" };
+const CAT_BADGE = { union:"badge-union", ingame:"badge-ingame", guide:"badge-guide", notice:"badge-notice" };
+
+let currentPage = 1;
+
+function renderNotices(page) {
+  const list    = document.getElementById("noticeList");
+  const pagDiv  = document.getElementById("pagination");
+  const total   = allNotices.length;
+  const perPage = NOTICES_PER_PAGE;
+  const totalPages = Math.ceil(total / perPage);
+
+  const start = (page - 1) * perPage;
+  const slice = allNotices.slice(start, start + perPage);
+
+  list.innerHTML = "";
+  slice.forEach(a => {
+    const el  = document.createElement(a.url ? "a" : "div");
+    if (a.url) { el.href = a.url; el.target = "_blank"; }
+    el.className = "notice-item";
+
+    const pinHtml = a.pinned
+      ? '<svg class="pin-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">' +
+          '<path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>' +
+        '</svg>'
+      : "";
+
+    el.innerHTML =
+      '<div class="notice-meta">' +
+        '<span class="badge ' + (CAT_BADGE[a.category] || "badge-notice") + '">' + (CAT_LABEL[a.category] || a.category) + '</span>' +
+        '<span class="notice-date">' + a.date + '</span>' +
+      '</div>' +
+      '<div class="notice-title">' + pinHtml + a.title + '</div>' +
+      '<div class="notice-summary">' + a.summary + '</div>';
+    list.appendChild(el);
+  });
+
+  // 페이지 버튼
+  pagDiv.innerHTML = "";
+  if (totalPages <= 1) return;
+
+  const mkBtn = (label, page, disabled, active) => {
+    const btn = document.createElement("button");
+    btn.className = "page-btn" + (active ? " active" : "");
+    btn.textContent = label;
+    btn.disabled = disabled;
+    if (!disabled) btn.addEventListener("click", () => {
+      currentPage = page;
+      renderNotices(currentPage);
+    });
+    return btn;
+  };
+
+  pagDiv.appendChild(mkBtn("‹", currentPage - 1, currentPage === 1, false));
+  for (let p = 1; p <= totalPages; p++) {
+    pagDiv.appendChild(mkBtn(p, p, false, p === currentPage));
+  }
+  pagDiv.appendChild(mkBtn("›", currentPage + 1, currentPage === totalPages, false));
+}
+
+renderNotices(1);
+
+// ─── 순위 추이 텍스트 ───────────────────────────────────────────
+const last5 = seasonKeys.slice(-5);
+const flowEl = document.getElementById("rankFlow");
+const parts  = last5.map((k, idx) => {
+  const rank = UNION[k].rank;
+  const val  = rank != null ? rank + "위" : "?";
+  const isLast = idx === last5.length - 1;
+  const span = '<span class="rank-flow-item' + (rank == null ? ' rank-flow-unknown' : '') + '">' + val + '</span>';
+  return isLast ? span : span + '<span class="rank-flow-arrow">→</span>';
+});
+flowEl.className = "rank-flow";
+flowEl.innerHTML = parts.join("");
+</script>
+
+</body>
+</html>

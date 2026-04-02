@@ -329,8 +329,8 @@ td.center   { text-align: center; }
 }
 .notice-summary { font-size: 12px; color: var(--text-sub); }
 
-.pin-icon {
-  color: var(--amber);
+.notice-megaphone {
+  color: var(--red);
   flex-shrink: 0;
 }
 
@@ -363,6 +363,91 @@ td.center   { text-align: center; }
   color: #fff;
 }
 .page-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ── 공지 팝업 트리거 / 정보 링크 아이템 ─────────────────────── */
+.notice-item--popup { cursor: pointer; }
+.notice-item--link  { cursor: pointer; }
+
+/* ── 여우별 공지사항: 제목·날짜 한 줄 ───────────────────────── */
+.notice-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.notice-header .notice-title {
+  margin-bottom: 0;
+  flex: 1;
+}
+.notice-header .notice-date {
+  margin-left: 0;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+/* ── 정보 & 공략: 뱃지·제목 한 줄 ──────────────────────────── */
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.info-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* ── 정보 & 공략 뱃지 ─────────────────────────────────────────── */
+.badge-lounge  { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.badge-youtube { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+.badge-website { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+/* ── 공지 상세 모달 ───────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.modal-card {
+  background: var(--bg-card);
+  border-radius: 14px;
+  padding: 28px 28px 24px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 78vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+}
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: background .15s, color .15s;
+}
+.modal-close:hover { background: var(--border); color: var(--text); }
+.modal-meta  { font-size: 11px; color: var(--text-dim); margin-bottom: 10px; }
+.modal-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 16px; line-height: 1.4; padding-right: 24px; display: flex; align-items: center; gap: 7px; }
+.modal-body  { font-size: 15px; color: var(--text); line-height: 1.85; white-space: pre-wrap; }
 
 /* ── 메인 콘텐츠 ──────────────────────────────────────── */
 main { padding: 24px 0 56px; }

@@ -82,14 +82,21 @@
         </div>
       </div>
 
-      <!-- 우: 공지사항 + 순위 차트 -->
+      <!-- 우: 여우별 공지사항 + 정보 & 공략 -->
       <div class="right-col">
 
-        <!-- 공지사항 -->
+        <!-- 여우별 공지사항 -->
         <div class="card">
-          <div class="section-title">공지사항</div>
+          <div class="section-title">여우별 공지사항</div>
           <div class="notice-list" id="noticeList"></div>
-          <div class="pagination" id="pagination"></div>
+          <div class="pagination" id="noticePagination"></div>
+        </div>
+
+        <!-- 정보 & 공략 -->
+        <div class="card">
+          <div class="section-title">정보 &amp; 공략</div>
+          <div class="notice-list" id="infoList"></div>
+          <div class="pagination" id="infoPagination"></div>
         </div>
 
       </div>
@@ -97,6 +104,16 @@
 
   </div>
 </main>
+
+<!-- ═══════════ 공지 상세 모달 ═══════════ -->
+<div id="noticeModal" class="modal-overlay" style="display:none">
+  <div class="modal-card">
+    <button class="modal-close" id="noticeModalClose">✕</button>
+    <div class="modal-meta" id="noticeModalMeta"></div>
+    <div class="modal-title" id="noticeModalTitle"></div>
+    <div class="modal-body" id="noticeModalBody"></div>
+  </div>
+</div>
 
 <!-- ═══════════ 데이터 로드 ═══════════ -->
 <script src="data/config.js"></script>
@@ -191,65 +208,29 @@ sorted.forEach((m, i) => {
   tbody.appendChild(tr);
 });
 
-// ─── 공지사항 (페이지네이션) ────────────────────────────────────
-// 최신글이 마지막 인덱스에 있으므로 reverse 후 정렬
-const pinned    = [...ANNOUNCEMENTS].filter(a => a.pinned).reverse();
-const notPinned = [...ANNOUNCEMENTS].filter(a => !a.pinned).reverse();
-const allNotices = [...pinned, ...notPinned];
+// ─── 공지사항 / 정보&공략 분리 ──────────────────────────────────
+const NOTICE_CATS = ["union", "notice"];
+const INFO_CATS   = ["guide", "ingame"];
 
-const CAT_LABEL = { union:"유니온", ingame:"인게임", guide:"공략", notice:"공지" };
-const CAT_BADGE = { union:"badge-union", ingame:"badge-ingame", guide:"badge-guide", notice:"badge-notice" };
+const rawNotices = ANNOUNCEMENTS.filter(a => NOTICE_CATS.includes(a.category));
+const rawInfos   = ANNOUNCEMENTS.filter(a => INFO_CATS.includes(a.category));
 
-let currentPage = 1;
+// 최신글이 배열 마지막 → reverse
+const allNotices = [...rawNotices].reverse();
+const allInfos   = [...rawInfos].reverse();
 
-function renderNotices(page) {
-  const list    = document.getElementById("noticeList");
-  const pagDiv  = document.getElementById("pagination");
-  const total   = allNotices.length;
-  const perPage = NOTICES_PER_PAGE;
-  const totalPages = Math.ceil(total / perPage);
-
-  const start = (page - 1) * perPage;
-  const slice = allNotices.slice(start, start + perPage);
-
-  list.innerHTML = "";
-  slice.forEach(a => {
-    const el  = document.createElement(a.url ? "a" : "div");
-    if (a.url) { el.href = a.url; el.target = "_blank"; }
-    el.className = "notice-item";
-
-    const pinHtml = a.pinned
-      ? '<svg class="pin-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">' +
-          '<path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z"/>' +
-        '</svg>'
-      : "";
-
-    el.innerHTML =
-      '<div class="notice-meta">' +
-        '<span class="badge ' + (CAT_BADGE[a.category] || "badge-notice") + '">' + (CAT_LABEL[a.category] || a.category) + '</span>' +
-        '<span class="notice-date">' + a.date + '</span>' +
-      '</div>' +
-      '<div class="notice-title">' + pinHtml + a.title + '</div>' +
-      '<div class="notice-summary">' + a.summary + '</div>';
-    list.appendChild(el);
-  });
-
-  // 페이지 버튼
+// ─── 페이지네이션 헬퍼 ──────────────────────────────────────────
+function renderPagination(pagDiv, currentPage, totalPages, onPageChange) {
   pagDiv.innerHTML = "";
   if (totalPages <= 1) return;
-
-  const mkBtn = (label, page, disabled, active) => {
+  const mkBtn = (label, p, disabled, active) => {
     const btn = document.createElement("button");
     btn.className = "page-btn" + (active ? " active" : "");
     btn.textContent = label;
     btn.disabled = disabled;
-    if (!disabled) btn.addEventListener("click", () => {
-      currentPage = page;
-      renderNotices(currentPage);
-    });
+    if (!disabled) btn.addEventListener("click", () => onPageChange(p));
     return btn;
   };
-
   pagDiv.appendChild(mkBtn("‹", currentPage - 1, currentPage === 1, false));
   for (let p = 1; p <= totalPages; p++) {
     pagDiv.appendChild(mkBtn(p, p, false, p === currentPage));
@@ -257,7 +238,99 @@ function renderNotices(page) {
   pagDiv.appendChild(mkBtn("›", currentPage + 1, currentPage === totalPages, false));
 }
 
-renderNotices(1);
+// ─── 여우별 공지사항 렌더링 (페이징 없음, 전체 표시) ────────────
+function renderNotices() {
+  const list = document.getElementById("noticeList");
+  list.innerHTML = "";
+
+  allNotices.forEach(a => {
+    const el = document.createElement("div");
+    el.className = "notice-item notice-item--popup";
+
+    const megaphone =
+      '<svg class="notice-megaphone" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">' +
+        '<path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/>' +
+      '</svg>';
+
+    const preview   = (a.content || a.summary || "").replace(/\n/g, " ");
+    const truncated = preview.length > 50 ? preview.slice(0, 50) + "…" : preview;
+
+    el.innerHTML =
+      '<div class="notice-header">' +
+        '<div class="notice-title">' + megaphone + a.title + '</div>' +
+        '<span class="notice-date">' + a.date + '</span>' +
+      '</div>' +
+      '<div class="notice-summary">' + truncated + '</div>';
+
+    el.addEventListener("click", () => openNoticeModal(a));
+    list.appendChild(el);
+  });
+}
+
+// ─── 모달 ────────────────────────────────────────────────────────
+const MODAL_MEGAPHONE =
+  '<svg style="color:var(--red);flex-shrink:0" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">' +
+    '<path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/>' +
+  '</svg>';
+
+function openNoticeModal(a) {
+  document.getElementById("noticeModalMeta").textContent = a.date;
+  document.getElementById("noticeModalTitle").innerHTML  = MODAL_MEGAPHONE + a.title;
+  document.getElementById("noticeModalBody").textContent = a.content || a.summary || "";
+  document.getElementById("noticeModal").style.display   = "flex";
+  document.body.style.overflow = "hidden";
+}
+function closeNoticeModal() {
+  document.getElementById("noticeModal").style.display = "none";
+  document.body.style.overflow = "";
+}
+document.getElementById("noticeModalClose").addEventListener("click", closeNoticeModal);
+document.getElementById("noticeModal").addEventListener("click", function(e) {
+  if (e.target === this) closeNoticeModal();
+});
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") closeNoticeModal();
+});
+
+// ─── 정보 & 공략 렌더링 ─────────────────────────────────────────
+const INFO_TAG_LABEL = { lounge: "라운지", youtube: "유투브", website: "웹사이트" };
+const INFO_TAG_BADGE = { lounge: "badge-lounge", youtube: "badge-youtube", website: "badge-website" };
+
+let infoPage = 1;
+
+function renderInfos(page) {
+  infoPage = page;
+  const list       = document.getElementById("infoList");
+  const pagDiv     = document.getElementById("infoPagination");
+  const totalPages = Math.ceil(allInfos.length / INFO_PER_PAGE);
+  const slice      = allInfos.slice((page - 1) * INFO_PER_PAGE, page * INFO_PER_PAGE);
+
+  list.innerHTML = "";
+  slice.forEach(a => {
+    const el = document.createElement("a");
+    el.className = "notice-item notice-item--link";
+    el.href = a.url || "#";
+    el.target = "_blank";
+    el.rel = "noopener noreferrer";
+
+    const tag      = a.infoTag || "website";
+    const badgeCls = INFO_TAG_BADGE[tag] || "badge-website";
+    const badgeTxt = INFO_TAG_LABEL[tag] || tag;
+
+    el.innerHTML =
+      '<div class="info-row">' +
+        '<span class="badge ' + badgeCls + '">' + badgeTxt + '</span>' +
+        '<span class="info-title">' + a.title + '</span>' +
+      '</div>';
+
+    list.appendChild(el);
+  });
+
+  renderPagination(pagDiv, page, totalPages, renderInfos);
+}
+
+renderNotices();
+renderInfos(1);
 
 // ─── 순위 추이 (상단 카드) ──────────────────────────────────────
 const last5   = seasonKeys.slice(-5);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>유니온레이드 | 승리의 여신: 니케</title>
+  <title>솔로레이드 | 승리의 여신: 니케</title>
   <link rel="icon" type="image/png" href="image/foxstar.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,9 +26,7 @@
       gap: 16px;
       margin-bottom: 18px;
     }
-    .raid-controls .season-group {
-      margin-right: auto;
-    }
+    .raid-controls .season-group { margin-right: auto; }
     .raid-controls label {
       display: flex;
       align-items: center;
@@ -65,9 +63,7 @@
       color: var(--text);
       margin-bottom: 10px;
     }
-    .raid-section + .raid-section {
-      margin-top: 28px;
-    }
+    .raid-section + .raid-section { margin-top: 28px; }
 
     /* ── 공통 테이블 ───────────────────────────────────────── */
     .raid-table-wrap { overflow-x: auto; }
@@ -102,14 +98,13 @@
     .raid-table tbody tr:hover td      { background: var(--bg-muted); }
 
     /* ── 보스 테이블 ───────────────────────────────────────── */
-    .boss-table td.td-num    { color: var(--text-sub); font-size: 12px; width: 36px; }
-    .boss-table td.td-name   { font-weight: 700; color: var(--text); }
-    .boss-table td.td-memo   { text-align: left; color: var(--text-sub); font-size: 12px; }
-    .boss-table td.td-weak   { font-weight: 600; }
+    .boss-table td.td-name { font-weight: 700; }
+    .boss-table td.td-weak { font-weight: 600; }
+    .boss-table td.td-memo { text-align: left; color: var(--text-sub); font-size: 12px; }
 
-    .core-o  { color: var(--green);  font-weight: 700; font-size: 15px; }
-    .core-x  { color: var(--red);    font-weight: 700; font-size: 15px; }
-    .core-tri{ color: var(--amber);  font-weight: 700; font-size: 15px; }
+    .core-o  { color: var(--green); font-weight: 700; font-size: 15px; }
+    .core-x  { color: var(--red);   font-weight: 700; font-size: 15px; }
+    .core-tri{ color: var(--amber); font-weight: 700; font-size: 15px; }
 
     /* ── 멤버 테이블 ───────────────────────────────────────── */
     .member-table th.th-deck {
@@ -121,22 +116,11 @@
       border-left: 1px solid var(--bg-muted);
       border-right: 1px solid var(--bg-muted);
     }
-    .member-table td.td-name {
-      font-weight: 700;
-      color: var(--text);
-    }
-    .member-table td.td-damage {
-      font-weight: 600;
-      color: var(--text);
-      font-variant-numeric: tabular-nums;
-    }
-    /* 멤버 구분선 */
-    .member-table tr.member-start td {
-      border-top: 2px solid var(--border);
-    }
-    .member-table tbody tr:first-child.member-start td {
-      border-top: none;
-    }
+    .member-table td.td-name   { font-weight: 700; }
+    .member-table td.td-damage { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .member-table tr.member-start td          { border-top: 2px solid var(--border); }
+    .member-table tbody tr:first-child.member-start td { border-top: none; }
 
     /* ── 캐릭터 이미지 ─────────────────────────────────────── */
     .char-wrap {
@@ -189,8 +173,8 @@
     </div>
     <nav>
       <a href="index.html">홈</a>
-      <a href="raid.html" class="active">유니온레이드</a>
-      <a href="solo.html">솔로레이드</a>
+      <a href="raid.html">유니온레이드</a>
+      <a href="solo.html" class="active">솔로레이드</a>
       <a href="shift.html">시프티패드</a>
     </nav>
   </div>
@@ -203,22 +187,13 @@
 
       <!-- 컨트롤 바 -->
       <div class="raid-controls">
-        <!-- 시즌 선택 (좌측) -->
         <label class="season-group">
           시즌:
           <select id="seasonSelect"></select>
         </label>
-        <!-- 간략히 + 보기 (우측) -->
         <label>
           <input type="checkbox" id="compactToggle" checked>
           간략히
-        </label>
-        <label>
-          보기:
-          <select id="viewSelect">
-            <option value="basic" selected>기본</option>
-            <option value="boss">보스</option>
-          </select>
         </label>
       </div>
 
@@ -229,7 +204,6 @@
           <table class="raid-table boss-table" style="width:auto; min-width:0;">
             <thead>
               <tr>
-                <th>#</th>
                 <th>이름</th>
                 <th>약점</th>
                 <th>코어</th>
@@ -241,7 +215,7 @@
         </div>
       </div>
 
-      <!-- 멤버 레이드 테이블 -->
+      <!-- 기록 테이블 -->
       <div class="raid-section">
         <div class="raid-section-title">기록</div>
         <div class="raid-table-wrap">
@@ -250,19 +224,14 @@
               <tr>
                 <th rowspan="2">#</th>
                 <th rowspan="2">닉네임</th>
-                <th rowspan="2">싱크로레벨</th>
+                <th rowspan="2">순위</th>
                 <th rowspan="2">총 대미지</th>
-                <th rowspan="2">보스</th>
-                <th rowspan="2">약코</th>
-                <th rowspan="2">레벨</th>
                 <th colspan="5" class="th-deck">덱</th>
                 <th rowspan="2">대미지</th>
-                <th rowspan="2">예상대미지</th>
-                <th rowspan="2">막타</th>
               </tr>
               <tr id="deckSubHeader"></tr>
             </thead>
-            <tbody id="raidTableBody"></tbody>
+            <tbody id="soloTableBody"></tbody>
           </table>
         </div>
       </div>
@@ -273,14 +242,14 @@
 
 <!-- ═══════════ 데이터 로드 ═══════════ -->
 <script src="data/config.js"></script>
-<script src="data/raid.js"></script>
+<script src="data/solo.js"></script>
 
-<!-- ═══════════ 레이드 스크립트 ═══════════ -->
+<!-- ═══════════ 솔로레이드 스크립트 ═══════════ -->
 <script>
 // ─── 기본 설정 ───────────────────────────────────────────────────
 document.getElementById("headerTitle").textContent = "⬡ " + CONFIG.unionName;
 document.getElementById("kakaoBtn").href = CONFIG.kakaoUrl;
-document.title = "유니온레이드 | " + CONFIG.unionName;
+document.title = "솔로레이드 | " + CONFIG.unionName;
 
 // ─── 이미지 플레이스홀더 ─────────────────────────────────────────
 const PLACEHOLDER = "data:image/svg+xml," + encodeURIComponent(
@@ -313,7 +282,7 @@ function coreHtml(val) {
 }
 
 // ─── 시즌 셀렉터 초기화 ──────────────────────────────────────────
-const seasonKeys   = Object.keys(BOSS).map(Number).sort((a, b) => a - b);
+const seasonKeys   = Object.keys(SOLO_BOSS).map(Number).sort((a, b) => a - b);
 const seasonSelect = document.getElementById("seasonSelect");
 seasonKeys.forEach(k => {
   const opt = document.createElement("option");
@@ -334,39 +303,54 @@ for (let i = 1; i <= 5; i++) {
 
 // ─── 보스 테이블 렌더링 ──────────────────────────────────────────
 function renderBossTable(season) {
-  const bossList = BOSS[season] || [];
-  const tbody    = document.getElementById("bossTableBody");
+  const boss  = SOLO_BOSS[season];
+  const tbody = document.getElementById("bossTableBody");
   tbody.innerHTML = "";
+  if (!boss) return;
 
-  bossList.forEach((b, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML =
-      '<td class="td-num">' + (i + 1) + '</td>' +
-      '<td class="td-name">' + b.name + '</td>' +
-      '<td class="td-weak">' + b.weakness + '</td>' +
-      '<td>' + coreHtml(b.core) + '</td>' +
-      '<td class="td-memo">' + (b.memo || "") + '</td>';
-    tbody.appendChild(tr);
-  });
+  const tr = document.createElement("tr");
+  tr.innerHTML =
+    '<td class="td-name">' + boss.name + '</td>' +
+    '<td class="td-weak">' + boss.weakness + '</td>' +
+    '<td>' + coreHtml(boss.core) + '</td>' +
+    '<td class="td-memo">' + (boss.memo || "") + '</td>';
+  tbody.appendChild(tr);
 }
 
-// ─── 멤버 테이블 렌더링 ──────────────────────────────────────────
-function renderRaidTable(season) {
+// ─── 기록 테이블 렌더링 ──────────────────────────────────────────
+function renderSoloTable(season) {
   const compact = document.getElementById("compactToggle").checked;
-  const tbody   = document.getElementById("raidTableBody");
+  const tbody   = document.getElementById("soloTableBody");
   tbody.innerHTML = "";
 
+  const seasonData   = SOLO[season] || { totalPlayers: 0, members: [] };
+  const totalPlayers = seasonData.totalPlayers || 0;
+
   // 총 대미지 합산 후 내림차순 정렬
-  const members = [...(RAID[season] || [])]
+  const members = [...seasonData.members]
     .map(m => ({ ...m, totalDamage: m.hit.reduce((s, h) => s + (h.damage || 0), 0) }))
     .sort((a, b) => b.totalDamage - a.totalDamage);
 
+  // 서버 순위 표시 포맷
+  function fmtServerRank(rank) {
+    if (!rank) return "—";
+    if (rank <= 200) return rank + "위";
+    if (!totalPlayers) return rank + "위";
+    const pct = (rank / totalPlayers * 100).toFixed(2);
+    return pct + "%";
+  }
+  function serverRankClass(rank) {
+    if (!rank) return "";
+    if (rank === 1)   return "rank-1";
+    if (rank <= 10)   return "rank-top";
+    if (rank <= 200)  return "";
+    return "dim";
+  }
+
   members.forEach((member, mIdx) => {
     member.hit.forEach((h, hIdx) => {
-      const tr  = document.createElement("tr");
-      const boss = (BOSS[season] || [])[h.boss - 1] || { name: "?", weakness: "?" };
+      const tr = document.createElement("tr");
 
-      // 멤버 첫 번째 행: # · 닉네임 · 싱크로레벨 · 총대미지 rowspan + 구분선
       if (hIdx === 0) {
         tr.classList.add("member-start");
 
@@ -382,10 +366,11 @@ function renderRaidTable(season) {
         tdName.textContent = member.name;
         tr.appendChild(tdName);
 
-        const tdSync = document.createElement("td");
-        tdSync.rowSpan     = member.hit.length;
-        tdSync.textContent = member.syncroLevel;
-        tr.appendChild(tdSync);
+        const tdServerRank = document.createElement("td");
+        tdServerRank.rowSpan     = member.hit.length;
+        tdServerRank.className   = serverRankClass(member.rank);
+        tdServerRank.textContent = fmtServerRank(member.rank);
+        tr.appendChild(tdServerRank);
 
         const tdTotal = document.createElement("td");
         tdTotal.rowSpan     = member.hit.length;
@@ -393,21 +378,6 @@ function renderRaidTable(season) {
         tdTotal.textContent = compact ? fmtCompact(member.totalDamage) : fmtFull(member.totalDamage);
         tr.appendChild(tdTotal);
       }
-
-      // 보스명
-      const tdBoss = document.createElement("td");
-      tdBoss.textContent = boss.name;
-      tr.appendChild(tdBoss);
-
-      // 약코
-      const tdWeak = document.createElement("td");
-      tdWeak.textContent = boss.weakness;
-      tr.appendChild(tdWeak);
-
-      // 레벨
-      const tdLv = document.createElement("td");
-      tdLv.textContent = "Lv " + h.level;
-      tr.appendChild(tdLv);
 
       // 덱 이미지 5칸
       h.deck.forEach(charName => {
@@ -428,21 +398,6 @@ function renderRaidTable(season) {
       tdDmg.textContent = compact ? fmtCompact(h.damage) : fmtFull(h.damage);
       tr.appendChild(tdDmg);
 
-      // 예상대미지
-      const tdExp = document.createElement("td");
-      tdExp.className   = "td-damage";
-      tdExp.textContent = compact ? fmtCompact(h.expectedDamage) : fmtFull(h.expectedDamage);
-      tr.appendChild(tdExp);
-
-      // 막타
-      const tdLast = document.createElement("td");
-      const cb     = document.createElement("input");
-      cb.type     = "checkbox";
-      cb.checked  = h.lastHit === 1;
-      cb.disabled = true;
-      tdLast.appendChild(cb);
-      tr.appendChild(tdLast);
-
       tbody.appendChild(tr);
     });
   });
@@ -452,10 +407,9 @@ function renderRaidTable(season) {
 function renderAll() {
   const season = Number(seasonSelect.value);
   renderBossTable(season);
-  renderRaidTable(season);
+  renderSoloTable(season);
 }
 
-// ─── 이벤트 ──────────────────────────────────────────────────────
 seasonSelect.addEventListener("change", renderAll);
 document.getElementById("compactToggle").addEventListener("change", renderAll);
 

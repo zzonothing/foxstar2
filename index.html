@@ -48,7 +48,7 @@
       </div>
       <div class="metric-card">
         <div class="metric-label">유니온레이드 최근 순위</div>
-        <div class="metric-value" id="metricRank">—</div>
+        <div id="metricRankFlow" class="metric-rank-flow"></div>
       </div>
       <div class="metric-card">
         <div class="metric-label">유니온레이드 일정</div>
@@ -92,15 +92,6 @@
           <div class="pagination" id="pagination"></div>
         </div>
 
-        <!-- 유니온레이드 순위 추이 -->
-        <div class="card">
-          <div class="section-title">유니온레이드 순위 추이</div>
-          <p style="font-size:12px; color:var(--text-dim); margin-top:-8px; margin-bottom:14px;">
-            (최근 5개 시즌)
-          </p>
-          <div id="rankFlow"></div>
-        </div>
-
       </div>
     </div>
 
@@ -141,7 +132,6 @@ const rankKey    = [...seasonKeys].reverse().find(k => UNION[k].rank != null);
 const latestRank = rankKey != null ? UNION[rankKey].rank : null;
 
 document.getElementById("metricAvgLevel").textContent = avgLevel;
-document.getElementById("metricRank").textContent     = latestRank != null ? latestRank + "위" : "—";
 
 // 일정 포맷
 const KR_DAYS = ["일","월","화","수","목","금","토"];
@@ -160,7 +150,7 @@ document.getElementById("metricUnionRaid").textContent = formatSchedule(CONFIG.s
 document.getElementById("metricSoloRaid").textContent  = formatSchedule(CONFIG.schedule.soloRaid);
 
 // ─── 멤버 테이블 렌더링 ──────────────────────────────────────────
-const ROLE_DISPLAY = { Leader: "길마", Officer: "부길마", Member: "일반" };
+const ROLE_DISPLAY = { Leader: "리더", Officer: "서브리더", Member: "일반" };
 const ROLE_BADGE   = { Leader: "badge-leader", Officer: "badge-officer", Member: "badge-member" };
 
 // 싱크로레벨 내림차순, 동일하면 닉네임 가나다순
@@ -269,17 +259,17 @@ function renderNotices(page) {
 
 renderNotices(1);
 
-// ─── 순위 추이 텍스트 ───────────────────────────────────────────
-const last5 = seasonKeys.slice(-5);
-const flowEl = document.getElementById("rankFlow");
-const parts  = last5.map((k, idx) => {
-  const rank = UNION[k].rank;
-  const val  = rank != null ? rank + "위" : "?";
+// ─── 순위 추이 (상단 카드) ──────────────────────────────────────
+const last5   = seasonKeys.slice(-5);
+const flowEl  = document.getElementById("metricRankFlow");
+const parts   = last5.map((k, idx) => {
+  const rank   = UNION[k].rank;
+  const val    = rank != null ? rank + "위" : "?";
   const isLast = idx === last5.length - 1;
-  const span = '<span class="rank-flow-item' + (rank == null ? ' rank-flow-unknown' : '') + '">' + val + '</span>';
+  const span   = '<span class="rank-flow-item' + (rank == null ? ' rank-flow-unknown' : '') + '">' + val + '</span>';
   return isLast ? span : span + '<span class="rank-flow-arrow">→</span>';
 });
-flowEl.className = "rank-flow";
+flowEl.className = "metric-rank-flow rank-flow";
 flowEl.innerHTML = parts.join("");
 </script>
 

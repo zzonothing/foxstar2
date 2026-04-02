@@ -245,6 +245,17 @@ td.center   { text-align: center; }
   font-size: 18px;
   color: var(--text-dim);
 }
+.metric-rank-flow {
+  padding: 8px 0 0;
+  justify-content: center;
+}
+.metric-rank-flow .rank-flow-item {
+  font-size: 16px;
+  font-weight: 600;
+}
+.metric-rank-flow .rank-flow-arrow {
+  font-size: 13px;
+}
 
 /* ── 뱃지 ─────────────────────────────────────────────── */
 .badge {

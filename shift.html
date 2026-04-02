@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>시프티패드 | 승리의 여신: 니케</title>
+  <link rel="icon" type="image/png" href="image/foxstar.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .shift-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+
+    /* ── 컨트롤 바 ─────────────────────────────────────────── */
+    .shift-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .shift-controls label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text);
+      cursor: pointer;
+      user-select: none;
+    }
+    .shift-controls select {
+      height: 30px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      outline: none;
+    }
+    .shift-controls select:focus { border-color: var(--blue); }
+
+    /* ── 테이블 ────────────────────────────────────────────── */
+    .shift-table-wrap { overflow-x: auto; }
+    .shift-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .shift-table th {
+      padding: 9px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      background: var(--bg-muted);
+      text-align: center;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .shift-table th:first-child { border-radius: 8px 0 0 0; }
+    .shift-table th:last-child  { border-radius: 0 8px 0 0; }
+    .shift-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--bg-muted);
+      color: var(--text);
+      text-align: center;
+      vertical-align: middle;
+    }
+    .shift-table tbody tr:last-child td { border-bottom: none; }
+    .shift-table tbody tr:hover td      { background: var(--bg-muted); }
+
+    /* ── 셀 스타일 ─────────────────────────────────────────── */
+    .td-num      { color: var(--text-sub); font-size: 12px; }
+    .td-name     { font-weight: 700; }
+    .td-char     { font-weight: 600; }
+    .td-uko      { font-weight: 700; color: var(--blue); }
+    .td-atk      { font-weight: 600; }
+    .td-skill    { font-weight: 600; }
+
+    /* 스킬은 등급 구분 없이 모두 동일 */
+
+    /* 돌파 뱃지 */
+    .badge-fullco {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--amber-light);
+      color: var(--amber);
+      border: 1px solid #fde68a;
+    }
+    .badge-upgrade {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--bg-muted);
+      color: var(--text-sub);
+      border: 1px solid var(--border);
+    }
+
+    /* 소장품 등급 */
+    .item-ssr { color: var(--amber);  font-weight: 700; }
+    .item-sr  { color: #a855f7;       font-weight: 700; }
+    .item-r   { color: var(--blue);   font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ 헤더 ═══════════ -->
+<header>
+  <div class="container">
+    <div class="header-top">
+      <div>
+        <div class="header-eyebrow">승리의 여신: 니케 · UNION PORTAL</div>
+        <div class="header-title" id="headerTitle">⬡ 발할라 유니온</div>
+      </div>
+      <a id="kakaoBtn" href="#" target="_blank" class="kakao-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="#1a1200">
+          <path d="M12 3C6.48 3 2 6.69 2 11.25c0 2.87 1.76 5.4 4.41 6.95L5.25 21 l3.86-2.06A11.3 11.3 0 0012 19.5c5.52 0 10-3.69 10-8.25S17.52 3 12 3z"/>
+        </svg>
+        가입 문의
+      </a>
+    </div>
+    <nav>
+      <a href="index.html">홈</a>
+      <a href="raid.html">유니온레이드</a>
+      <a href="solo.html">솔로레이드</a>
+      <a href="shift.html" class="active">시프티패드</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ═══════════ 메인 ═══════════ -->
+<main>
+  <div class="container page-content">
+    <div class="shift-card">
+
+      <!-- 컨트롤 바 -->
+      <div class="shift-controls">
+        <label>
+          시즌:
+          <select id="seasonSelect"></select>
+        </label>
+        <label>
+          캐릭터:
+          <select id="charSelect"></select>
+        </label>
+        <label>
+          멤버:
+          <select id="memberSelect"></select>
+        </label>
+      </div>
+
+      <!-- 테이블 -->
+      <div class="shift-table-wrap">
+        <table class="shift-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>닉네임</th>
+              <th>싱크로레벨</th>
+              <th>캐릭터</th>
+              <th>돌파</th>
+              <th>우코 ▼</th>
+              <th>공증</th>
+              <th>소장품</th>
+              <th>스킬1</th>
+              <th>스킬2</th>
+              <th>스킬3</th>
+            </tr>
+          </thead>
+          <tbody id="shiftTableBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- ═══════════ 데이터 로드 ═══════════ -->
+<script src="data/config.js"></script>
+<script src="data/union.js"></script>
+
+<!-- ═══════════ 시프티패드 스크립트 ═══════════ -->
+<script>
+// ─── 기본 설정 ───────────────────────────────────────────────────
+document.getElementById("headerTitle").textContent = "⬡ " + CONFIG.unionName;
+document.getElementById("kakaoBtn").href = CONFIG.kakaoUrl;
+document.title = "시프티패드 | " + CONFIG.unionName;
+
+// ─── 속성 색상 ───────────────────────────────────────────────────
+const ELEMENT_COLOR = {
+  "수냉": "#3b82f6",
+  "작열": "#ef4444",
+  "철갑": "#f59e0b",
+  "전격": "#a855f7",
+  "풍압": "#22c55e",
+};
+const ELEMENT_EMOJI = {
+  "수냉": "🔵",
+  "작열": "🔴",
+  "철갑": "🟡",
+  "전격": "🟣",
+  "풍압": "🟢",
+};
+const ELEMENT_ORDER = ["수냉", "작열", "철갑", "전격", "풍압"];
+
+function elementDot(element) {
+  const color = ELEMENT_COLOR[element] || "#94a3b8";
+  return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + color + ';margin-right:5px;vertical-align:middle;flex-shrink:0"></span>';
+}
+
+// ─── 시즌 셀렉터 초기화 ──────────────────────────────────────────
+const seasonKeys   = Object.keys(UNION).map(Number).sort((a, b) => a - b);
+const seasonSelect = document.getElementById("seasonSelect");
+seasonKeys.forEach(k => {
+  const opt = document.createElement("option");
+  opt.value       = k;
+  opt.textContent = "S" + k;
+  seasonSelect.appendChild(opt);
+});
+seasonSelect.value = seasonKeys[seasonKeys.length - 1];
+
+// ─── 캐릭터 / 멤버 셀렉터 ────────────────────────────────────────
+const charSelect   = document.getElementById("charSelect");
+const memberSelect = document.getElementById("memberSelect");
+
+function buildCharSelect(season) {
+  const data = UNION[season];
+  charSelect.innerHTML = "";
+
+  const allOpt = document.createElement("option");
+  allOpt.value       = "";
+  allOpt.textContent = "전체";
+  charSelect.appendChild(allOpt);
+
+  if (!data) return;
+
+  // 캐릭터 name + element 수집 (중복 제거)
+  const seen = new Map();
+  data.members.forEach(member => {
+    (member.characters || []).forEach(ch => {
+      if (!seen.has(ch.name)) seen.set(ch.name, ch.element || "");
+    });
+  });
+
+  // element 순 → 이름 순 정렬
+  const sorted = [...seen.entries()].sort((a, b) => {
+    const ei = ELEMENT_ORDER.indexOf(a[1]);
+    const ej = ELEMENT_ORDER.indexOf(b[1]);
+    const diff = (ei === -1 ? 99 : ei) - (ej === -1 ? 99 : ej);
+    return diff !== 0 ? diff : a[0].localeCompare(b[0], "ko");
+  });
+
+  sorted.forEach(([name, element]) => {
+    const emoji = ELEMENT_EMOJI[element] || "⚪";
+    const opt   = document.createElement("option");
+    opt.value       = name;
+    opt.textContent = emoji + " " + name;
+    charSelect.appendChild(opt);
+  });
+}
+
+function buildMemberSelect(season) {
+  const data = UNION[season];
+  memberSelect.innerHTML = "";
+
+  const allOpt = document.createElement("option");
+  allOpt.value       = "";
+  allOpt.textContent = "전체";
+  memberSelect.appendChild(allOpt);
+
+  if (!data) return;
+
+  // 싱크로레벨 내림차순 정렬
+  const sorted = [...data.members].sort((a, b) => b.syncroLevel - a.syncroLevel);
+  sorted.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value       = m.name;
+    opt.textContent = m.name + " (" + m.syncroLevel + ")";
+    memberSelect.appendChild(opt);
+  });
+}
+
+// ─── 돌파 뱃지 HTML ──────────────────────────────────────────────
+function upgradeBadge(val) {
+  if (!val) return "—";
+  if (val === "풀코") return '<span class="badge-fullco">풀코</span>';
+  return '<span class="badge-upgrade">' + val + '</span>';
+}
+
+// ─── 소장품 표시 ─────────────────────────────────────────────────
+function itemHtml(grade, level) {
+  const cls = grade === "SSR" ? "item-ssr" : grade === "SR" ? "item-sr" : "item-r";
+  return '<span class="' + cls + '">' + grade + ' ' + level + '</span>';
+}
+
+// ─── 스킬 표시 ───────────────────────────────────────────────────
+function skillHtml(val) {
+  return val != null ? val : "—";
+}
+
+// ─── 테이블 렌더링 ───────────────────────────────────────────────
+function renderTable() {
+  const season       = Number(seasonSelect.value);
+  const filterChar   = charSelect.value;
+  const filterMember = memberSelect.value;
+  const data         = UNION[season];
+  const tbody        = document.getElementById("shiftTableBody");
+  tbody.innerHTML    = "";
+  if (!data) return;
+
+  // 모든 멤버의 캐릭터를 하나의 배열로 펼치기
+  const rows = [];
+  data.members.forEach(member => {
+    if (filterMember && member.name !== filterMember) return;
+    (member.characters || []).forEach(ch => {
+      if (!filterChar || ch.name === filterChar) {
+        rows.push({ member, ch });
+      }
+    });
+  });
+
+  // 우코 내림차순 → 공증 내림차순 → 캐릭터명 가나다순
+  rows.sort((a, b) => {
+    const ukoDiff = (b.ch.increaseElementDamage || 0) - (a.ch.increaseElementDamage || 0);
+    if (ukoDiff !== 0) return ukoDiff;
+    const atkDiff = (b.ch.increaseAtk || 0) - (a.ch.increaseAtk || 0);
+    if (atkDiff !== 0) return atkDiff;
+    return a.ch.name.localeCompare(b.ch.name, "ko");
+  });
+
+  rows.forEach(({ member, ch }, i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      '<td class="td-num">' + (i + 1) + '</td>' +
+      '<td class="td-name">' + member.name + '</td>' +
+      '<td>' + member.syncroLevel + '</td>' +
+      '<td class="td-char" style="display:flex;align-items:center;justify-content:flex-start">' + elementDot(ch.element) + ch.name + '</td>' +
+      '<td>' + upgradeBadge(ch.upgrade) + '</td>' +
+      '<td class="td-uko">' + (ch.increaseElementDamage != null ? ch.increaseElementDamage.toFixed(2) + "%" : "—") + '</td>' +
+      '<td class="td-atk">' + (ch.increaseAtk != null ? ch.increaseAtk.toFixed(2) + "%" : "—") + '</td>' +
+      '<td>' + itemHtml(ch.itemGrade, ch.itemLevel) + '</td>' +
+      '<td class="td-skill">' + skillHtml(ch.skill1) + '</td>' +
+      '<td class="td-skill">' + skillHtml(ch.skill2) + '</td>' +
+      '<td class="td-skill">' + skillHtml(ch.skill3) + '</td>';
+    tbody.appendChild(tr);
+  });
+}
+
+// ─── 이벤트 ──────────────────────────────────────────────────────
+seasonSelect.addEventListener("change", () => {
+  buildCharSelect(Number(seasonSelect.value));
+  buildMemberSelect(Number(seasonSelect.value));
+  renderTable();
+});
+charSelect.addEventListener("change", renderTable);
+memberSelect.addEventListener("change", renderTable);
+
+buildCharSelect(Number(seasonSelect.value));
+buildMemberSelect(Number(seasonSelect.value));
+renderTable();
+</script>
+
+</body>
+</html>

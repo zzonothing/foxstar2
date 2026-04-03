@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark");</script>
   <link rel="stylesheet" href="css/style.css" />
   <style>
     /* ── 공통 ──────────────────────────────────────────────── */
@@ -164,12 +165,15 @@
         <div class="header-eyebrow">승리의 여신: 니케 · UNION PORTAL</div>
         <div class="header-title" id="headerTitle">⬡ 여우별 유니온</div>
       </div>
-      <a id="kakaoBtn" href="#" target="_blank" class="kakao-btn">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="#1a1200">
-          <path d="M12 3C6.48 3 2 6.69 2 11.25c0 2.87 1.76 5.4 4.41 6.95L5.25 21 l3.86-2.06A11.3 11.3 0 0012 19.5c5.52 0 10-3.69 10-8.25S17.52 3 12 3z"/>
-        </svg>
-        가입 문의
-      </a>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="theme-toggle" id="themeToggle" title="다크/라이트 모드 전환">🌙</button>
+        <a id="kakaoBtn" href="#" target="_blank" class="kakao-btn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="#1a1200">
+            <path d="M12 3C6.48 3 2 6.69 2 11.25c0 2.87 1.76 5.4 4.41 6.95L5.25 21 l3.86-2.06A11.3 11.3 0 0012 19.5c5.52 0 10-3.69 10-8.25S17.52 3 12 3z"/>
+          </svg>
+          가입 문의
+        </a>
+      </div>
     </div>
     <nav>
       <a href="index.html">홈</a>
@@ -414,6 +418,20 @@ seasonSelect.addEventListener("change", renderAll);
 document.getElementById("compactToggle").addEventListener("change", renderAll);
 
 renderAll();
+</script>
+
+<script>
+(function() {
+  const html  = document.documentElement;
+  const btn   = document.getElementById("themeToggle");
+  const saved = localStorage.getItem("theme");
+  if (saved === "dark") { html.classList.add("dark"); btn.textContent = "☀️"; }
+  btn.addEventListener("click", function() {
+    const isDark = html.classList.toggle("dark");
+    btn.textContent = isDark ? "☀️" : "🌙";
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  });
+})();
 </script>
 
 </body>

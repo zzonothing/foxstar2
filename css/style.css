@@ -21,6 +21,27 @@
   --purple-light:#f5f3ff;
 }
 
+/* ── 다크모드 변수 ─────────────────────────────────────── */
+html.dark {
+  --bg:          #0f172a;
+  --bg-card:     #1e293b;
+  --bg-muted:    #273548;
+  --border:      #334155;
+  --text:        #f1f5f9;
+  --text-sub:    #94a3b8;
+  --text-dim:    #64748b;
+  --blue:        #3b82f6;
+  --blue-light:  #1e3a5f;
+  --amber:       #f59e0b;
+  --amber-light: #2d2006;
+  --green:       #22c55e;
+  --green-light: #052e16;
+  --red:         #ef4444;
+  --red-light:   #2d0a0a;
+  --purple:      #a78bfa;
+  --purple-light:#1e1040;
+}
+
 html, body {
   background: var(--bg);
   color: var(--text);
@@ -54,7 +75,27 @@ header {
   top: 0;
   z-index: 100;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: background .2s;
 }
+html.dark header { background: rgba(30,41,59,0.95); }
+
+/* ── 다크모드 토글 버튼 ────────────────────────────────── */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-muted);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 17px;
+  transition: background .15s, border-color .15s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover { background: var(--border); }
 
 .header-top {
   display: flex;

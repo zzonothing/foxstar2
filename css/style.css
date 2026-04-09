@@ -492,6 +492,123 @@ td.center   { text-align: center; }
 /* ── 메인 콘텐츠 ──────────────────────────────────────── */
 main { padding: 24px 0 56px; }
 .page-content { display: flex; flex-direction: column; gap: 18px; }
+html { scroll-behavior: smooth; }
+
+/* ── 모바일 탭 (≤960px 에서만 표시) ─────────────────────── */
+.mobile-tabs { display: none; }
+
+@media (max-width: 960px) {
+  /* ── 탭 바 ── */
+  .mobile-tabs {
+    display: flex;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    padding: 3px;
+    gap: 3px;
+  }
+  .mobile-tab {
+    flex: 1;
+    padding: 9px 0;
+    border: none;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-sub);
+    font-size: 13px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+  }
+  .mobile-tab.active {
+    background: var(--blue);
+    color: #fff;
+  }
+  .mobile-tab:hover:not(.active) { background: var(--bg-muted); color: var(--text); }
+
+  /* ── 탭 콘텐츠 전환 ── */
+  #mainLayout[data-active="member"] .right-col    { display: none; }
+  #mainLayout[data-active="deck"]   #memberSection { display: none; }
+
+  /* ── 전체 레이아웃 ── */
+  .container   { padding: 0 14px; }
+  .card        { padding: 16px; }
+  .main-layout { gap: 0; }
+
+  /* ── 헤더 조정 ── */
+  .header-top     { padding: 10px 0; }
+  .header-eyebrow { font-size: 10px; }
+  .header-title   { font-size: 16px; }
+  .kakao-btn      { padding: 7px 12px; font-size: 12px; }
+
+  /* ── 지표 카드 ── */
+  .metrics      { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .metric-card  { padding: 14px; }
+  .metric-value { font-size: 20px; }
+
+  /* ── 멤버 테이블 ── */
+  td, th       { padding: 7px 8px; font-size: 12px; }
+  th           { font-size: 10px; }
+  .badge       { font-size: 10px; padding: 1px 6px; }
+  .level-diff  { font-size: 10px; }
+
+  /* ── 추천덱: 한 줄에 맞게 크기 조정 ── */
+  .char-portrait,
+  .char-portrait-ph {
+    width: 48px;
+    height: 48px;
+    border-radius: 9px;
+  }
+  .char-slot.char-alt .char-portrait,
+  .char-slot.char-alt .char-portrait-ph {
+    width: 38px;
+    height: 38px;
+  }
+  .char-name                     { font-size: 10px; max-width: 52px; }
+  .char-slot.char-alt .char-name { font-size: 9px; max-width: 42px; }
+  .deck-chars                    { gap: 8px; padding: 3px 0; }
+  .deck-elem-lbl                 { width: 38px; height: 38px; font-size: 12px; border-radius: 8px; }
+  .deck-row                      { gap: 8px; }
+  .deck-panel                    { gap: 8px; }
+  .char-or-grp::before           { inset: -3px -2px; }
+  .char-or-sep                   { font-size: 8px; padding-top: 19px; }
+  .deck-divider                  { margin: 14px 0; }
+  .section-title                 { font-size: 13px; margin-bottom: 12px; }
+}
+
+@media (max-width: 480px) {
+  .container { padding: 0 10px; }
+  .card      { padding: 12px; }
+
+  /* ── 멤버 테이블 더 좁게 ── */
+  td, th     { padding: 6px 6px; font-size: 11px; }
+  th         { font-size: 9px; }
+  .badge     { font-size: 9px; padding: 1px 5px; }
+
+  /* ── 추천덱: portrait = name max-width 로 맞춰서 슬롯 폭 고정 ── */
+  .char-portrait,
+  .char-portrait-ph {
+    width: 40px;
+    height: 40px;
+  }
+  .char-slot.char-alt .char-portrait,
+  .char-slot.char-alt .char-portrait-ph {
+    width: 32px;
+    height: 32px;
+  }
+  /* max-width 를 portrait 크기와 같게 → 슬롯 폭이 portrait 크기로 고정됨 */
+  .char-name                     { font-size: 9px; max-width: 40px; }
+  .char-slot.char-alt .char-name { font-size: 8px; max-width: 32px; }
+  .char-note                     { font-size: 8px; }
+
+  .deck-chars                    { gap: 5px; }
+  .deck-elem-lbl                 { width: 32px; height: 32px; font-size: 11px; border-radius: 7px; }
+  .deck-row                      { gap: 5px; }
+  .char-or-grp                   { gap: 2px; padding: 0 3px; }
+  .char-or-grp::before           { inset: -3px -1px; }
+  .char-or-sep                   { font-size: 8px; padding-top: 15px; }
+}
 
 /* ── 속성 칩 ──────────────────────────────────────────── */
 .elem-chip {

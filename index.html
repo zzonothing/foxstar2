@@ -86,23 +86,12 @@
         </div>
       </div>
 
-      <!-- 우: 여우별 공지사항 + 정보 & 공략 -->
+      <!-- 우: 유니온레이드 추천덱 -->
       <div class="right-col">
-
-        <!-- 여우별 공지사항 -->
         <div class="card">
-          <div class="section-title">여우별 공지사항</div>
-          <div class="notice-list" id="noticeList"></div>
-          <div class="pagination" id="noticePagination"></div>
+          <div class="section-title">유니온레이드 추천덱</div>
+          <div class="deck-panels" id="deckPanels"></div>
         </div>
-
-        <!-- 정보 & 공략 -->
-        <div class="card">
-          <div class="section-title">정보 &amp; 공략</div>
-          <div class="notice-list" id="infoList"></div>
-          <div class="pagination" id="infoPagination"></div>
-        </div>
-
       </div>
     </div>
 
@@ -212,129 +201,158 @@ sorted.forEach((m, i) => {
   tbody.appendChild(tr);
 });
 
-// ─── 공지사항 / 정보&공략 분리 ──────────────────────────────────
-const NOTICE_CATS = ["union", "notice"];
-const INFO_CATS   = ["guide", "ingame"];
+// ─── 추천덱 데이터 ──────────────────────────────────────────────
+const ELEM_CLS = { "작열":"fire","풍압":"wind","수냉":"water","전격":"thunder","철갑":"iron" };
 
-const rawNotices = ANNOUNCEMENTS.filter(a => NOTICE_CATS.includes(a.category));
-const rawInfos   = ANNOUNCEMENTS.filter(a => INFO_CATS.includes(a.category));
+const DECK_DATA = [
+  { labels:["작열","풍압","수냉"], rows:[
+    { elem:"작열", chars:[
+      {name:"세이렌",img:"세이렌",note:"버충"},{name:"클리드",img:"클리드"},{name:"라피",img:"라피"},
+      {name:"클디젤",img:"클디젤"},{name:"미하라",img:"미하라",note:"토템"}
+    ]},
+    { elem:"풍압", chars:[
+      {name:"목단",img:"목단"},{name:"흑영",img:"흑영"},{name:"리버렐리오",img:"리버렐리오",note:"버충"},
+      {name:"나유타",img:"나유타"},
+      {name:"벨벳",img:"벨벳",alts:[{name:"메스트",img:"메스트"}]}
+    ]},
+    { elem:"수냉", chars:[
+      {name:"리타",img:"리타"},{name:"크라운",img:"크라운"},{name:"수화",img:"수화",note:"버충"},
+      {name:"헬름",img:"헬름",note:"버충",alts:[{name:"프리바티",img:"프리바티"}]},
+      {name:"수레그",img:"수레그"}
+    ]},
+  ]},
+  { labels:["작열","수냉","전격"], rows:[
+    { elem:"작열", chars:[
+      {name:"세이렌",img:"세이렌",note:"버충"},{name:"클리드",img:"클리드"},{name:"라피",img:"라피"},
+      {name:"클디젤",img:"클디젤"},{name:"미하라",img:"미하라",note:"토템"}
+    ]},
+    { elem:"수냉", chars:[
+      {name:"리타",img:"리타"},{name:"크라운",img:"크라운"},{name:"수화",img:"수화",note:"버충"},
+      {name:"헬름",img:"헬름",note:"버충",alts:[{name:"프리바티",img:"프리바티"}]},
+      {name:"수레그",img:"수레그"}
+    ]},
+    { elem:"전격", chars:[
+      {name:"목단",img:"목단"},{name:"바이드",img:"바이드",note:"버충"},{name:"신데렐라",img:"신데렐라"},
+      {name:"수니스",img:"수니스"},{name:"클이든",img:"클이든"}
+    ]},
+  ]},
+  { labels:["철갑","풍압","전격"], rows:[
+    { elem:"철갑", chars:[
+      {name:"세이렌",img:"세이렌",note:"버충"},{name:"크라운",img:"크라운"},{name:"라피",img:"라피"},
+      {name:"레드후드",img:"레드후드",alts:[{name:"이브",img:"이브"},{name:"레이븐",img:"레이븐"}]},
+      {name:"메스트",img:"메스트",alts:[{name:"나가",img:"나가"},{name:"수헬름",img:"수헬름"}]}
+    ]},
+    { elem:"풍압", chars:[
+      {name:"리타",img:"리타"},{name:"흑영",img:"흑영"},{name:"리버렐리오",img:"리버렐리오",note:"버충"},
+      {name:"나유타",img:"나유타"},
+      {name:"벨벳",img:"벨벳",alts:[{name:"메스트",img:"메스트"}]}
+    ]},
+    { elem:"전격", chars:[
+      {name:"목단",img:"목단"},{name:"바이드",img:"바이드",note:"버충"},{name:"신데렐라",img:"신데렐라"},
+      {name:"수니스",img:"수니스"},{name:"클이든",img:"클이든"}
+    ]},
+  ]},
+  { labels:["철갑","수냉","전격"], rows:[
+    { elem:"철갑", chars:[
+      {name:"세이렌",img:"세이렌",note:"버충"},{name:"크라운",img:"크라운"},{name:"라피",img:"라피"},
+      {name:"레드후드",img:"레드후드",alts:[{name:"이브",img:"이브"},{name:"레이븐",img:"레이븐"}]},
+      {name:"메스트",img:"메스트",alts:[{name:"나가",img:"나가"},{name:"수헬름",img:"수헬름"}]}
+    ]},
+    { elem:"수냉", chars:[
+      {name:"리타",img:"리타"},{name:"나유타",img:"나유타"},{name:"수화",img:"수화",note:"버충"},
+      {name:"헬름",img:"헬름",note:"버충",alts:[{name:"프리바티",img:"프리바티"}]},
+      {name:"수레그",img:"수레그"}
+    ]},
+    { elem:"전격", chars:[
+      {name:"목단",img:"목단"},{name:"바이드",img:"바이드",note:"버충"},{name:"신데렐라",img:"신데렐라"},
+      {name:"수니스",img:"수니스"},{name:"클이든",img:"클이든"}
+    ]},
+  ]},
+];
 
-// 최신글이 배열 마지막 → reverse
-const allNotices = [...rawNotices].reverse();
-const allInfos   = [...rawInfos].reverse();
-
-// ─── 페이지네이션 헬퍼 ──────────────────────────────────────────
-function renderPagination(pagDiv, currentPage, totalPages, onPageChange) {
-  pagDiv.innerHTML = "";
-  if (totalPages <= 1) return;
-  const mkBtn = (label, p, disabled, active) => {
-    const btn = document.createElement("button");
-    btn.className = "page-btn" + (active ? " active" : "");
-    btn.textContent = label;
-    btn.disabled = disabled;
-    if (!disabled) btn.addEventListener("click", () => onPageChange(p));
-    return btn;
-  };
-  pagDiv.appendChild(mkBtn("‹", currentPage - 1, currentPage === 1, false));
-  for (let p = 1; p <= totalPages; p++) {
-    pagDiv.appendChild(mkBtn(p, p, false, p === currentPage));
+function makeCharSlot(char, isPrimary) {
+  const slot = document.createElement("div");
+  slot.className = "char-slot" + (isPrimary ? "" : " char-alt");
+  if (char.img) {
+    const img = document.createElement("img");
+    img.className = "char-portrait";
+    img.src = "image/" + char.img + ".webp";
+    img.alt = char.name;
+    slot.appendChild(img);
+  } else {
+    const ph = document.createElement("div");
+    ph.className = "char-portrait char-portrait-ph";
+    ph.textContent = char.name.slice(0, 2);
+    slot.appendChild(ph);
   }
-  pagDiv.appendChild(mkBtn("›", currentPage + 1, currentPage === totalPages, false));
+  const nm = document.createElement("div");
+  nm.className = "char-name";
+  nm.textContent = char.name;
+  if (char.note) {
+    const n = document.createElement("span");
+    n.className = "char-note";
+    n.textContent = char.note;
+    nm.appendChild(n);
+  }
+  slot.appendChild(nm);
+  return slot;
 }
 
-// ─── 여우별 공지사항 렌더링 (페이징 없음, 전체 표시) ────────────
-function renderNotices() {
-  const list = document.getElementById("noticeList");
-  list.innerHTML = "";
+function renderDecks() {
+  const panelsEl = document.getElementById("deckPanels");
+  if (!panelsEl) return;
 
-  allNotices.forEach(a => {
-    const el = document.createElement("div");
-    el.className = "notice-item notice-item--popup";
+  DECK_DATA.forEach((deck, idx) => {
+    // 속성별 캐릭터 행
+    const panel = document.createElement("div");
+    panel.className = "deck-panel active";
 
-    const megaphone =
-      '<svg class="notice-megaphone" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">' +
-        '<path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/>' +
-      '</svg>';
+    deck.rows.forEach(row => {
+      const rowEl = document.createElement("div");
+      rowEl.className = "deck-row";
 
-    const preview   = (a.content || a.summary || "").replace(/\n/g, " ");
-    const truncated = preview.length > 50 ? preview.slice(0, 50) + "…" : preview;
+      const lbl = document.createElement("div");
+      lbl.className = "deck-elem-lbl elem-chip chip-" + ELEM_CLS[row.elem];
+      lbl.textContent = row.elem;
+      rowEl.appendChild(lbl);
 
-    el.innerHTML =
-      '<div class="notice-header">' +
-        '<div class="notice-title">' + megaphone + a.title + '</div>' +
-        '<span class="notice-date">' + a.date + '</span>' +
-      '</div>' +
-      '<div class="notice-summary">' + truncated + '</div>';
+      const charsEl = document.createElement("div");
+      charsEl.className = "deck-chars";
 
-    el.addEventListener("click", () => openNoticeModal(a));
-    list.appendChild(el);
+      row.chars.forEach(char => {
+        if (char.alts && char.alts.length > 0) {
+          const grp = document.createElement("div");
+          grp.className = "char-or-grp";
+          grp.appendChild(makeCharSlot(char, true));
+          char.alts.forEach(alt => {
+            const sep = document.createElement("div");
+            sep.className = "char-or-sep";
+            sep.textContent = "or";
+            grp.appendChild(sep);
+            grp.appendChild(makeCharSlot(alt, false));
+          });
+          charsEl.appendChild(grp);
+        } else {
+          charsEl.appendChild(makeCharSlot(char, true));
+        }
+      });
+
+      rowEl.appendChild(charsEl);
+      panel.appendChild(rowEl);
+    });
+
+    panelsEl.appendChild(panel);
+
+    // 마지막이 아니면 구분선
+    if (idx < DECK_DATA.length - 1) {
+      const div = document.createElement("div");
+      div.className = "deck-divider";
+      panelsEl.appendChild(div);
+    }
   });
 }
 
-// ─── 모달 ────────────────────────────────────────────────────────
-const MODAL_MEGAPHONE =
-  '<svg style="color:var(--red);flex-shrink:0" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">' +
-    '<path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/>' +
-  '</svg>';
-
-function openNoticeModal(a) {
-  document.getElementById("noticeModalMeta").textContent = a.date;
-  document.getElementById("noticeModalTitle").innerHTML  = MODAL_MEGAPHONE + a.title;
-  document.getElementById("noticeModalBody").textContent = a.content || a.summary || "";
-  document.getElementById("noticeModal").style.display   = "flex";
-  document.body.style.overflow = "hidden";
-}
-function closeNoticeModal() {
-  document.getElementById("noticeModal").style.display = "none";
-  document.body.style.overflow = "";
-}
-document.getElementById("noticeModalClose").addEventListener("click", closeNoticeModal);
-document.getElementById("noticeModal").addEventListener("click", function(e) {
-  if (e.target === this) closeNoticeModal();
-});
-document.addEventListener("keydown", function(e) {
-  if (e.key === "Escape") closeNoticeModal();
-});
-
-// ─── 정보 & 공략 렌더링 ─────────────────────────────────────────
-const INFO_TAG_LABEL = { lounge: "라운지", youtube: "유투브", website: "웹사이트" };
-const INFO_TAG_BADGE = { lounge: "badge-lounge", youtube: "badge-youtube", website: "badge-website" };
-
-let infoPage = 1;
-
-function renderInfos(page) {
-  infoPage = page;
-  const list       = document.getElementById("infoList");
-  const pagDiv     = document.getElementById("infoPagination");
-  const totalPages = Math.ceil(allInfos.length / INFO_PER_PAGE);
-  const slice      = allInfos.slice((page - 1) * INFO_PER_PAGE, page * INFO_PER_PAGE);
-
-  list.innerHTML = "";
-  slice.forEach(a => {
-    const el = document.createElement("a");
-    el.className = "notice-item notice-item--link";
-    el.href = a.url || "#";
-    el.target = "_blank";
-    el.rel = "noopener noreferrer";
-
-    const tag      = a.infoTag || "website";
-    const badgeCls = INFO_TAG_BADGE[tag] || "badge-website";
-    const badgeTxt = INFO_TAG_LABEL[tag] || tag;
-
-    el.innerHTML =
-      '<div class="info-row">' +
-        '<span class="badge ' + badgeCls + '">' + badgeTxt + '</span>' +
-        '<span class="info-title">' + a.title + '</span>' +
-      '</div>';
-
-    list.appendChild(el);
-  });
-
-  renderPagination(pagDiv, page, totalPages, renderInfos);
-}
-
-renderNotices();
-renderInfos(1);
+renderDecks();
 
 // ─── 순위 추이 (상단 카드) ──────────────────────────────────────
 const last5   = seasonKeys.slice(-5);

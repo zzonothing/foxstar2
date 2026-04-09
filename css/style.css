@@ -134,8 +134,7 @@ html.dark header { background: rgba(30,41,59,0.95); }
 .kakao-btn:hover { background: #f0d800; }
 
 nav {
-  display: flex;
-  gap: 2px;
+  display: none;
 }
 
 nav a {
@@ -202,7 +201,7 @@ nav a.active {
 /* ── 메인 2단 레이아웃 ─────────────────────────────────── */
 .main-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1.6fr;
   gap: 18px;
   align-items: start;
 }
@@ -493,3 +492,169 @@ td.center   { text-align: center; }
 /* ── 메인 콘텐츠 ──────────────────────────────────────── */
 main { padding: 24px 0 56px; }
 .page-content { display: flex; flex-direction: column; gap: 18px; }
+
+/* ── 속성 칩 ──────────────────────────────────────────── */
+.elem-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.chip-fire    { background: var(--red-light);    color: var(--red);    border-color: #fecaca; }
+.chip-wind    { background: var(--green-light);  color: var(--green);  border-color: #bbf7d0; }
+.chip-water   { background: var(--blue-light);   color: var(--blue);   border-color: #bfdbfe; }
+.chip-thunder { background: var(--purple-light); color: var(--purple); border-color: #ddd6fe; }
+.chip-iron    { background: #fefce8; color: #854d0e; border-color: #fde047; }
+html.dark .chip-iron { background: #1c1407; color: #fde047; border-color: #713f12; }
+
+/* ── 추천덱 전체 컨테이너 ────────────────────────────────── */
+.deck-panels { display: flex; flex-direction: column; gap: 0; }
+
+.deck-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.deck-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.deck-tab-sep { color: var(--text-dim); font-size: 11px; margin: 0 1px; }
+
+.deck-divider {
+  border: none;
+  border-top: 2px solid var(--text-dim);
+  margin: 18px 0;
+}
+
+/* ── 추천덱 패널 ────────────────────────────────────────── */
+.deck-panel        { display: none; flex-direction: column; gap: 10px; margin-bottom: 0; }
+.deck-panel.active { display: flex; }
+
+.deck-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.deck-elem-lbl {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+.deck-chars {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 5px 0;
+}
+
+/* ── 캐릭터 슬롯 ───────────────────────────────────────── */
+.char-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+.char-portrait {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  background: var(--bg-muted);
+  display: block;
+}
+.char-portrait-ph {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  border: 2px dashed var(--border);
+  background: var(--bg-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.char-slot.char-alt .char-portrait,
+.char-slot.char-alt .char-portrait-ph {
+  width: 46px;
+  height: 46px;
+  opacity: 0.75;
+  border-style: dashed;
+}
+.char-name {
+  font-size: 11px;
+  color: var(--text);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 64px;
+  word-break: keep-all;
+}
+.char-slot.char-alt .char-name {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-sub);
+  max-width: 50px;
+}
+.char-note {
+  display: block;
+  font-size: 9px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* ── or 그룹 ───────────────────────────────────────────── */
+.char-or-grp {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  position: relative;
+  padding: 0 5px;
+  z-index: 0;
+}
+.char-or-grp::before {
+  content: '';
+  position: absolute;
+  inset: -5px -3px;
+  border: 1.5px dashed var(--border);
+  border-radius: 12px;
+  background: var(--bg-muted);
+  z-index: -1;
+}
+.char-or-sep {
+  font-size: 9px;
+  color: var(--text-dim);
+  font-weight: 700;
+  padding-top: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+  user-select: none;
+}

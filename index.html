@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script>if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark");</script>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -95,8 +96,18 @@
       <!-- 우: 유니온레이드 추천덱 -->
       <div class="right-col">
         <div class="card" id="deckSection">
-          <div class="section-title">유니온레이드 추천덱</div>
+          <div class="section-title-row">
+            <div class="section-title">유니온레이드 추천덱</div>
+            <button class="deck-copy-btn" id="deckCopyBtn" title="이미지로 복사">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              복사
+            </button>
+          </div>
           <div class="deck-panels" id="deckPanels"></div>
+          <div class="deck-copy-toast" id="deckCopyToast">이미지 복사가 완료되었습니다.</div>
         </div>
       </div>
     </div>
@@ -244,12 +255,12 @@ const DECK_DATA = [
   ]},
   { labels:["철갑","풍압","전격"], rows:[
     { elem:"철갑", chars:[
-      {name:"세이렌",img:"세이렌",note:"버충"},{name:"크라운",img:"크라운"},{name:"라피",img:"라피"},
+      {name:"리타",img:"리타"},{name:"크라운",img:"크라운"},{name:"라피",img:"라피"},
       {name:"레드후드",img:"레드후드",alts:[{name:"이브",img:"이브"},{name:"레이븐",img:"레이븐"}]},
       {name:"메스트",img:"메스트",alts:[{name:"나가",img:"나가"},{name:"수헬름",img:"수헬름"}]}
     ]},
     { elem:"풍압", chars:[
-      {name:"리타",img:"리타"},{name:"흑영",img:"흑영"},{name:"리버렐리오",img:"리버렐리오",note:"버충"},
+      {name:"세이렌",img:"세이렌",note:"버충"},{name:"흑영",img:"흑영"},{name:"리버렐리오",img:"리버렐리오",note:"버충"},
       {name:"나유타",img:"나유타"},
       {name:"벨벳",img:"벨벳",alts:[{name:"메스트",img:"메스트"}]}
     ]},
@@ -359,6 +370,51 @@ function renderDecks() {
 }
 
 renderDecks();
+
+// ─── 추천덱 이미지 복사 ──────────────────────────────────────────
+(function() {
+  var btn   = document.getElementById("deckCopyBtn");
+  var toast = document.getElementById("deckCopyToast");
+  var panels = document.getElementById("deckPanels");
+  var toastTimer = null;
+
+  function showToast() {
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() {
+      toast.classList.remove("show");
+    }, 2500);
+  }
+
+  btn.addEventListener("click", function() {
+    btn.disabled = true;
+    html2canvas(panels, {
+      backgroundColor: getComputedStyle(document.getElementById("deckSection")).backgroundColor,
+      scale: 2,
+      useCORS: true,
+      logging: false
+    }).then(function(canvas) {
+      canvas.toBlob(function(blob) {
+        navigator.clipboard.write([
+          new ClipboardItem({ "image/png": blob })
+        ]).then(function() {
+          showToast();
+        }).catch(function() {
+          // 클립보드 API 실패 시 다운로드로 폴백
+          var a = document.createElement("a");
+          a.href = canvas.toDataURL("image/png");
+          a.download = "union-raid-deck.png";
+          a.click();
+          showToast();
+        }).finally(function() {
+          btn.disabled = false;
+        });
+      }, "image/png");
+    }).catch(function() {
+      btn.disabled = false;
+    });
+  });
+})();
 
 // ─── 순위 추이 (상단 카드) ──────────────────────────────────────
 const last5   = seasonKeys.slice(-5);

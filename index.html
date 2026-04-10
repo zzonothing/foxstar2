@@ -224,28 +224,28 @@ const ELEM_CLS = { "작열":"fire","풍압":"wind","수냉":"water","전격":"th
 const DECK_DATA = [
   { labels:["작열","풍압","수냉"], rows:[
     { elem:"작열", chars:[
-      {name:"세이렌",img:"세이렌",note:"버충"},{name:"클리드",img:"클리드"},{name:"라피",img:"라피"},
-      {name:"클디젤",img:"클디젤"},{name:"미하라",img:"미하라",note:"토템"}
+      {name:"라피",img:"라피",note:"1버"},{name:"클리드",img:"클리드"},{name:"헬름",img:"헬름",note:["선버","버충"]},
+      {name:"클디젤",img:"클디젤",note:"후버"},{name:"미하라",img:"미하라",note:"토템"}
     ]},
     { elem:"풍압", chars:[
-      {name:"목단",img:"목단"},{name:"흑영",img:"흑영"},{name:"리버렐리오",img:"리버렐리오",note:"버충"},
+      {name:"세이렌",img:"세이렌"},{name:"흑영",img:"흑영"},{name:"리버렐리오",img:"리버렐리오",note:"버충"},
       {name:"나유타",img:"나유타"},
       {name:"벨벳",img:"벨벳",alts:[{name:"메스트",img:"메스트"}]}
     ]},
     { elem:"수냉", chars:[
       {name:"리타",img:"리타"},{name:"크라운",img:"크라운"},{name:"수화",img:"수화",note:"버충"},
-      {name:"헬름",img:"헬름",note:"버충",alts:[{name:"프리바티",img:"프리바티"}]},
+      {name:"수로시",img:"수로시",alts:[{name:"프리바티",img:"프리바티"}]},
       {name:"수레그",img:"수레그"}
     ]},
   ]},
   { labels:["작열","수냉","전격"], rows:[
     { elem:"작열", chars:[
-      {name:"세이렌",img:"세이렌",note:"버충"},{name:"클리드",img:"클리드"},{name:"라피",img:"라피"},
-      {name:"클디젤",img:"클디젤"},{name:"미하라",img:"미하라",note:"토템"}
+      {name:"세이렌",img:"세이렌",note:"버충"},{name:"클리드",img:"클리드"},{name:"라피",img:"라피",note:"선버"},
+      {name:"클디젤",img:"클디젤",note:"후버"},{name:"미하라",img:"미하라",note:"토템"}
     ]},
     { elem:"수냉", chars:[
       {name:"리타",img:"리타"},{name:"크라운",img:"크라운"},{name:"수화",img:"수화",note:"버충"},
-      {name:"헬름",img:"헬름",note:"버충",alts:[{name:"프리바티",img:"프리바티"}]},
+      {name:"수로시",img:"수로시",alts:[{name:"헬름",img:"헬름",note:"버충"},{name:"프리바티",img:"프리바티"}]},
       {name:"수레그",img:"수레그"}
     ]},
     { elem:"전격", chars:[
@@ -256,7 +256,7 @@ const DECK_DATA = [
   { labels:["철갑","풍압","전격"], rows:[
     { elem:"철갑", chars:[
       {name:"리타",img:"리타"},{name:"크라운",img:"크라운"},{name:"라피",img:"라피"},
-      {name:"레드후드",img:"레드후드",alts:[{name:"이브",img:"이브"},{name:"레이븐",img:"레이븐"}]},
+      {name:"레드후드",img:"레드후드",note:"버충",alts:[{name:"이브",img:"이브"},{name:"레이븐",img:"레이븐"}]},
       {name:"메스트",img:"메스트",alts:[{name:"나가",img:"나가"},{name:"수헬름",img:"수헬름"}]}
     ]},
     { elem:"풍압", chars:[
@@ -272,12 +272,12 @@ const DECK_DATA = [
   { labels:["철갑","수냉","전격"], rows:[
     { elem:"철갑", chars:[
       {name:"세이렌",img:"세이렌",note:"버충"},{name:"크라운",img:"크라운"},{name:"라피",img:"라피"},
-      {name:"레드후드",img:"레드후드",alts:[{name:"이브",img:"이브"},{name:"레이븐",img:"레이븐"}]},
+      {name:"레드후드",img:"레드후드",note:"버충",alts:[{name:"이브",img:"이브"},{name:"레이븐",img:"레이븐"}]},
       {name:"메스트",img:"메스트",alts:[{name:"나가",img:"나가"},{name:"수헬름",img:"수헬름"}]}
     ]},
     { elem:"수냉", chars:[
       {name:"리타",img:"리타"},{name:"나유타",img:"나유타"},{name:"수화",img:"수화",note:"버충"},
-      {name:"헬름",img:"헬름",note:"버충",alts:[{name:"프리바티",img:"프리바티"}]},
+      {name:"수로시",img:"수로시",alts:[{name:"헬름",img:"헬름",note:"버충"},{name:"프리바티",img:"프리바티"}]},
       {name:"수레그",img:"수레그"}
     ]},
     { elem:"전격", chars:[
@@ -306,10 +306,13 @@ function makeCharSlot(char, isPrimary) {
   nm.className = "char-name";
   nm.textContent = char.name;
   if (char.note) {
-    const n = document.createElement("span");
-    n.className = "char-note";
-    n.textContent = char.note;
-    nm.appendChild(n);
+    const notes = Array.isArray(char.note) ? char.note : [char.note];
+    notes.forEach(t => {
+      const n = document.createElement("span");
+      n.className = "char-note";
+      n.textContent = t;
+      nm.appendChild(n);
+    });
   }
   slot.appendChild(nm);
   return slot;

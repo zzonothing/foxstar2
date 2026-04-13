@@ -83,7 +83,7 @@
                 <th style="width:36px">#</th>
                 <th>닉네임</th>
                 <th>싱크로레벨</th>
-                <th>역할</th>
+                <th style="text-align:center">평균 상승</th>
                 <th style="text-align:center">노말</th>
                 <th style="text-align:center">하드</th>
                 <th style="text-align:center">타워</th>
@@ -193,9 +193,31 @@ function statCell(val, key) {
   if (val == null) return '<td class="center">—</td>';
   const isMax = String(val) === String(STAT_MAX[key]);
   const style = isMax
-    ? ' style="background:rgba(245,158,11,0.12);color:#d97706;font-weight:700;"'
+    ? ' style="color:#c0392b;font-weight:700;"'
     : '';
   return '<td class="center"' + style + '>' + val + '</td>';
+}
+
+// ─── 평균 상승 계산 (최신 시즌 제외 후 최근 5개 시즌 기준) ──────
+const AVG_RISE_SEASONS = seasonKeys.slice(0, -1).slice(-5).map(String);
+const avgRiseMap = {};
+for (let i = 0; i < AVG_RISE_SEASONS.length - 1; i++) {
+  const fromSeason = UNION[AVG_RISE_SEASONS[i]];
+  const toSeason   = UNION[AVG_RISE_SEASONS[i + 1]];
+  if (!fromSeason || !toSeason) continue;
+  const fromMap = {};
+  fromSeason.members.forEach(m => { fromMap[m.name] = m.syncroLevel; });
+  toSeason.members.forEach(m => {
+    if (fromMap[m.name] == null) return;
+    const diff = m.syncroLevel - fromMap[m.name];
+    if (!avgRiseMap[m.name]) avgRiseMap[m.name] = [];
+    avgRiseMap[m.name].push(diff);
+  });
+}
+// 평균값 확정
+const avgRiseFinal = {};
+for (const [name, diffs] of Object.entries(avgRiseMap)) {
+  avgRiseFinal[name] = (diffs.reduce((s, v) => s + v, 0) / diffs.length).toFixed(1);
 }
 
 // 싱크로레벨 내림차순, 동일하면 닉네임 가나다순
@@ -224,9 +246,11 @@ sorted.forEach((m, i) => {
   const tr = document.createElement("tr");
   tr.innerHTML =
     '<td class="' + rankClass + '">' + (i + 1) + '</td>' +
-    '<td class="primary">' + m.name + '</td>' +
+    '<td class="primary">' + m.name + (role === "Leader" ? ' <span title="리더" style="font-size:1em;">👑</span>' : role === "Officer" ? ' <span title="서브리더" style="font-size:1em;filter:grayscale(1) brightness(0.9) contrast(1.4);">👑</span>' : '') + '</td>' +
     '<td><span style="font-weight:600;color:var(--text)">' + m.syncroLevel + '</span> ' + diffHtml + '</td>' +
-    '<td><span class="badge ' + (ROLE_BADGE[role] || "badge-member") + '">' + (ROLE_DISPLAY[role] || "일반") + '</span></td>' +
+    (avgRiseFinal[m.name] != null
+      ? '<td class="center" style="color:var(--green);font-size:0.85em;">+' + avgRiseFinal[m.name] + '</td>'
+      : '<td class="center" style="color:var(--text-sub);font-size:0.85em;">—</td>') +
     statCell(m.normal,     "normal")     +
     statCell(m.hard,       "hard")       +
     statCell(m.tribeTower, "tribeTower") +

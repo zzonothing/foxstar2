@@ -314,12 +314,13 @@ function renderRaidTable(seasonKey) {
 
   // ── 멤버 데이터 가공 (총대미지 합산 → 내림차순 정렬) ────────
   const rows = members.map(m => {
-    const raidMap   = {}; // bossName → { dmg, count }
+    const raidMap   = {}; // bossName → { dmg, count, finalHit }
     let total = 0;
     m.raids.forEach(r => {
-      if (!raidMap[r.bossName]) raidMap[r.bossName] = { dmg: 0, count: 0 };
-      raidMap[r.bossName].dmg   += r.totalDamage;
-      raidMap[r.bossName].count += 1;
+      if (!raidMap[r.bossName]) raidMap[r.bossName] = { dmg: 0, count: 0, finalHit: false };
+      raidMap[r.bossName].dmg      += r.totalDamage;
+      raidMap[r.bossName].count    += 1;
+      raidMap[r.bossName].finalHit  = raidMap[r.bossName].finalHit || r.isFinalHit;
       total += r.totalDamage;
     });
     return { ...m, total, raidMap };
@@ -360,7 +361,8 @@ function renderRaidTable(seasonKey) {
       const elem  = getBossElem(bossName);
       if (entry) {
         td.className = "td-damage " + (elem ? "td-boss-" + elem : "td-boss");
-        td.innerHTML = fmt(entry.dmg) +
+        const dmgStyle = entry.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
+        td.innerHTML = '<span' + dmgStyle + '>' + fmt(entry.dmg) + '</span>' +
           (entry.count > 1
             ? ' <span style="font-size:10px;font-weight:700;color:var(--text-sub);margin-left:3px;">' + entry.count + '타</span>'
             : "");

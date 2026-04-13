@@ -183,6 +183,21 @@ document.getElementById("metricSoloRaid").textContent  = formatSchedule(CONFIG.s
 const ROLE_DISPLAY = { Leader: "리더", Officer: "서브리더", Member: "일반" };
 const ROLE_BADGE   = { Leader: "badge-leader", Officer: "badge-officer", Member: "badge-member" };
 
+// 하드코딩 역할 재정의
+const ROLE_OVERRIDE = { "유화": "Leader", "진섯": "Officer", "SUM": "Officer" };
+
+// 최대치 정의
+const STAT_MAX = { normal: "44-36", hard: "44-36", tribeTower: 1350, overclock: 51 };
+
+function statCell(val, key) {
+  if (val == null) return '<td class="center">—</td>';
+  const isMax = String(val) === String(STAT_MAX[key]);
+  const style = isMax
+    ? ' style="background:rgba(245,158,11,0.12);color:#d97706;font-weight:700;"'
+    : '';
+  return '<td class="center"' + style + '>' + val + '</td>';
+}
+
 // 싱크로레벨 내림차순, 동일하면 닉네임 가나다순
 const sorted = [...members].sort((a, b) => {
   if (b.syncroLevel !== a.syncroLevel) return b.syncroLevel - a.syncroLevel;
@@ -191,7 +206,7 @@ const sorted = [...members].sort((a, b) => {
 
 const tbody = document.getElementById("memberTableBody");
 sorted.forEach((m, i) => {
-  const role     = m.role || "Member";   // role 미지정 시 Member 기본값
+  const role     = ROLE_OVERRIDE[m.name] || m.role || "Member";
   const prev     = prevMemberMap[m.uid];
   const isNew    = prev == null;
   const diff     = prev != null ? m.syncroLevel - prev.syncroLevel : null;
@@ -212,10 +227,10 @@ sorted.forEach((m, i) => {
     '<td class="primary">' + m.name + '</td>' +
     '<td><span style="font-weight:600;color:var(--text)">' + m.syncroLevel + '</span> ' + diffHtml + '</td>' +
     '<td><span class="badge ' + (ROLE_BADGE[role] || "badge-member") + '">' + (ROLE_DISPLAY[role] || "일반") + '</span></td>' +
-    '<td class="center">' + (m.normal      != null ? m.normal      : "—") + '</td>' +
-    '<td class="center">' + (m.hard        != null ? m.hard        : "—") + '</td>' +
-    '<td class="center">' + (m.tribeTower  != null ? m.tribeTower  : "—") + '</td>' +
-    '<td class="center">' + (m.overclock   != null ? m.overclock   : "—") + '</td>' +
+    statCell(m.normal,     "normal")     +
+    statCell(m.hard,       "hard")       +
+    statCell(m.tribeTower, "tribeTower") +
+    statCell(m.overclock,  "overclock")  +
     '<td class="center"><a href="' + bbUrl + '" target="_blank" class="bblink" title="시프티패드 프로필 보기">' +
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
         '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>' +

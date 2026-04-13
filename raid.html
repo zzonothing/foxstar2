@@ -28,7 +28,24 @@
       gap: 16px;
       margin-bottom: 18px;
     }
-    .raid-controls .season-group { margin-right: auto; }
+    .raid-controls .season-group { margin-right: 0; }
+
+    /* 복사 버튼 */
+    .copy-btn {
+      height: 30px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: var(--bg-muted); }
+    .copy-btn.copied { color: var(--blue); border-color: var(--blue); }
     .raid-controls label {
       display: flex;
       align-items: center;
@@ -178,19 +195,38 @@
           <select id="seasonSelect"></select>
         </label>
         <label>
+          타입:
+          <select id="typeSelect">
+            <option value="basic" selected>기본</option>
+            <option value="boss">보스</option>
+          </select>
+        </label>
+        <label>
           <input type="checkbox" id="compactToggle" checked>
-          간략히
+          대미지 간략히
+        </label>
+        <label>
+          <input type="checkbox" id="deckToggle">
+          덱 보기
         </label>
       </div>
 
-      <!-- 기록 테이블 -->
-      <div class="raid-table-wrap">
-        <table class="raid-table" id="raidTable">
-          <thead id="raidTableHead"></thead>
-          <tbody id="raidTableBody"></tbody>
-          <tfoot id="raidTableFoot"></tfoot>
-        </table>
+      <!-- 기본 뷰 테이블 -->
+      <div id="basicView">
+        <div style="display:flex; justify-content:flex-start; margin-bottom:8px;">
+          <button class="copy-btn" id="copyBasicBtn">복사</button>
+        </div>
+        <div class="raid-table-wrap">
+          <table class="raid-table" id="raidTable">
+            <thead id="raidTableHead"></thead>
+            <tbody id="raidTableBody"></tbody>
+            <tfoot id="raidTableFoot"></tfoot>
+          </table>
+        </div>
       </div>
+
+      <!-- 보스 뷰 -->
+      <div id="bossView" style="display:none;"></div>
 
     </div>
   </div>
@@ -200,6 +236,7 @@
 <script src="data/config.js"></script>
 <script src="data/union.js"></script>
 <script src="data/raid.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <!-- ═══════════ 레이드 스크립트 ═══════════ -->
 <script>
@@ -220,6 +257,31 @@ function fmtCompact(num) {
 function fmtFull(num) {
   if (num == null || num === 0) return "—";
   return num.toLocaleString("ko-KR");
+}
+
+// ─── 캐릭터 이미지 경로 ──────────────────────────────────────────
+function charImgPath(name) {
+  // "홍련 : 흑영" → "홍련_흑영", " : " → "_"
+  const fileName = name.replace(" : ", "_");
+  return "image/" + encodeURIComponent(fileName) + ".webp";
+}
+
+const DECK_IMG_FALLBACK = "data:image/svg+xml," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24">' +
+  '<rect width="24" height="24" fill="#94a3b8" rx="3"/>' +
+  '<text x="12" y="17" text-anchor="middle" fill="white" font-size="14" font-family="sans-serif">?</text>' +
+  '</svg>'
+);
+
+function deckImagesHtml(squad) {
+  if (!squad || !squad.length) return "";
+  const sorted = [...squad].sort((a, b) => a.slot - b.slot);
+  const imgs = sorted.map(c =>
+    '<img src="' + charImgPath(c.name) + '" title="' + c.name + '" ' +
+    'style="width:24px;height:24px;border-radius:3px;object-fit:cover;flex-shrink:0;" ' +
+    'onerror="this.onerror=null;this.src=\'' + DECK_IMG_FALLBACK + '\'">'
+  ).join("");
+  return '<div style="display:flex;gap:2px;margin-top:5px;justify-content:center;">' + imgs + '</div>';
 }
 
 // ─── 보스 코드 → 약점 속성 매핑 ─────────────────────────────────
@@ -314,13 +376,17 @@ function renderRaidTable(seasonKey) {
 
   // ── 멤버 데이터 가공 (총대미지 합산 → 내림차순 정렬) ────────
   const rows = members.map(m => {
-    const raidMap   = {}; // bossName → { dmg, count, finalHit }
+    const raidMap = {}; // bossName → { dmg, count, finalHit, squad, maxDmg }
     let total = 0;
     m.raids.forEach(r => {
-      if (!raidMap[r.bossName]) raidMap[r.bossName] = { dmg: 0, count: 0, finalHit: false };
+      if (!raidMap[r.bossName]) raidMap[r.bossName] = { dmg: 0, count: 0, finalHit: false, squad: r.squad, maxDmg: 0 };
       raidMap[r.bossName].dmg      += r.totalDamage;
       raidMap[r.bossName].count    += 1;
       raidMap[r.bossName].finalHit  = raidMap[r.bossName].finalHit || r.isFinalHit;
+      if (r.totalDamage > raidMap[r.bossName].maxDmg) {
+        raidMap[r.bossName].maxDmg = r.totalDamage;
+        raidMap[r.bossName].squad  = r.squad;
+      }
       total += r.totalDamage;
     });
     return { ...m, total, raidMap };
@@ -355,6 +421,7 @@ function renderRaidTable(seasonKey) {
     tr.appendChild(tdTotal);
 
     // 보스별 대미지
+    const showDeck = document.getElementById("deckToggle").checked;
     bosses.forEach(([bossName]) => {
       const td    = document.createElement("td");
       const entry = member.raidMap[bossName];
@@ -365,7 +432,8 @@ function renderRaidTable(seasonKey) {
         td.innerHTML = '<span' + dmgStyle + '>' + fmt(entry.dmg) + '</span>' +
           (entry.count > 1
             ? ' <span style="font-size:10px;font-weight:700;color:var(--text-sub);margin-left:3px;">' + entry.count + '타</span>'
-            : "");
+            : "") +
+          (showDeck ? deckImagesHtml(entry.squad) : "");
       } else {
         td.className   = "td-empty td-boss-empty";
         td.textContent = "";
@@ -428,11 +496,234 @@ function renderRaidTable(seasonKey) {
   tfoot.appendChild(tfr);
 }
 
-// ─── 이벤트 ──────────────────────────────────────────────────────
-seasonSelect.addEventListener("change", () => renderRaidTable(seasonSelect.value));
-document.getElementById("compactToggle").addEventListener("change", () => renderRaidTable(seasonSelect.value));
+// ─── 보스 뷰 렌더링 (보스별 개별 테이블, 세로 나열) ─────────────
+function renderBossView(seasonKey) {
+  const compact  = document.getElementById("compactToggle").checked;
+  const fmt      = compact ? fmtCompact : fmtFull;
+  const members  = RAID[seasonKey] || [];
+  const bossView = document.getElementById("bossView");
+  bossView.innerHTML = "";
 
-renderRaidTable(seasonSelect.value);
+  // UNION 싱크로레벨 조회
+  const unionKey  = seasonKey.replace("S", "");
+  const unionData = UNION[unionKey];
+  const syncroMap = {};
+  if (unionData) {
+    unionData.members.forEach(m => {
+      if (m.blaBlaLinkUId) syncroMap[m.blaBlaLinkUId] = m.syncroLevel;
+    });
+  }
+
+  // 시즌 내 보스 목록 (step 오름차순)
+  const bossMap = new Map();
+  members.forEach(m => m.raids.forEach(r => {
+    if (!bossMap.has(r.bossName)) bossMap.set(r.bossName, r.step);
+  }));
+  const bosses = [...bossMap.entries()].sort((a, b) => a[1] - b[1]);
+
+  bosses.forEach(([bossName]) => {
+    const elem  = getBossElem(bossName);
+    const short = shortBossName(bossName);
+
+    // 이 보스를 공격한 멤버 집계
+    const bossRows = [];
+    members.forEach(m => {
+      const raids = m.raids.filter(r => r.bossName === bossName);
+      if (!raids.length) return;
+      let dmg = 0, count = 0, finalHit = false, squad = null, maxDmg = 0;
+      raids.forEach(r => {
+        dmg += r.totalDamage; count++; finalHit = finalHit || r.isFinalHit;
+        if (r.totalDamage > maxDmg) { maxDmg = r.totalDamage; squad = r.squad; }
+      });
+      bossRows.push({ name: m.name, openId: m.openId, dmg, count, finalHit, squad });
+    });
+    bossRows.sort((a, b) => b.dmg - a.dmg);
+
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = "margin-bottom: 28px;";
+
+    // 보스 제목 + 복사 버튼 행
+    const titleRow = document.createElement("div");
+    titleRow.style.cssText = "display:flex; align-items:center; gap:10px; margin-bottom:8px;";
+
+    const title = document.createElement("div");
+    title.style.cssText = "font-size: 14px; font-weight: 700; color: var(--text);";
+    title.innerHTML = short + (elem ? ' <span class="elem-' + elem + '">[' + elem + ']</span>' : "");
+    titleRow.appendChild(title);
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className   = "copy-btn";
+    copyBtn.textContent = "복사";
+    titleRow.appendChild(copyBtn);
+
+    wrapper.appendChild(titleRow);
+
+    const tableWrap = document.createElement("div");
+    tableWrap.className = "raid-table-wrap";
+
+    const table = document.createElement("table");
+    table.className = "raid-table";
+
+    // thead
+    const thead     = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    [
+      { label: "#",         width: "40px"  },
+      { label: "닉네임",    width: "160px" },
+      { label: "싱크로레벨", width: "80px"  },
+      { label: "대미지",    width: "150px" },
+    ].forEach(({ label, width }) => {
+      const th = document.createElement("th");
+      th.textContent    = label;
+      th.style.width    = width;
+      th.style.minWidth = width;
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // tbody
+    const tbody   = document.createElement("tbody");
+    const showDeckBoss = document.getElementById("deckToggle").checked;
+    bossRows.forEach((row, idx) => {
+      const tr          = document.createElement("tr");
+      const syncroLevel = syncroMap[row.openId] || "—";
+
+      const tdRank = document.createElement("td");
+      tdRank.textContent = idx + 1;
+      tr.appendChild(tdRank);
+
+      const tdName = document.createElement("td");
+      tdName.className   = "td-name";
+      tdName.textContent = row.name;
+      tr.appendChild(tdName);
+
+      const tdSync = document.createElement("td");
+      tdSync.textContent = syncroLevel;
+      tr.appendChild(tdSync);
+
+      const tdDmg   = document.createElement("td");
+      tdDmg.className = "td-damage" + (elem ? " td-boss-" + elem : "");
+      const dmgStyle = row.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
+      tdDmg.innerHTML  = '<span' + dmgStyle + '>' + fmt(row.dmg) + '</span>' +
+        (row.count > 1
+          ? ' <span style="font-size:10px;font-weight:700;color:var(--text-sub);margin-left:3px;">' + row.count + '타</span>'
+          : "") +
+        (showDeckBoss ? deckImagesHtml(row.squad) : "");
+      tr.appendChild(tdDmg);
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+
+    // tfoot
+    const tfoot = document.createElement("tfoot");
+    const tfr   = document.createElement("tr");
+
+    const tfEmpty = document.createElement("td"); tfEmpty.textContent = ""; tfr.appendChild(tfEmpty);
+    const tfName  = document.createElement("td"); tfName.textContent  = ""; tfr.appendChild(tfName);
+
+    const validLevels = bossRows.map(r => syncroMap[r.openId]).filter(v => v != null);
+    const avgLevel = validLevels.length
+      ? (validLevels.reduce((s, v) => s + v, 0) / validLevels.length).toFixed(1)
+      : "—";
+    const tfSync = document.createElement("td");
+    tfSync.innerHTML = avgLevel + '<div class="td-foot-sub">평균</div>';
+    tfr.appendChild(tfSync);
+
+    const sumDmg = bossRows.reduce((s, r) => s + r.dmg, 0);
+    const tfDmg  = document.createElement("td");
+    tfDmg.className = elem ? "td-boss-" + elem : "";
+    tfDmg.innerHTML  = fmt(sumDmg) + '<div class="td-foot-sub">' + bossRows.length + '명 참여</div>';
+    tfr.appendChild(tfDmg);
+
+    tfoot.appendChild(tfr);
+    table.appendChild(tfoot);
+
+    copyBtn.addEventListener("click", function() {
+      copyTableAsImage(tableWrap, this);
+    });
+
+    tableWrap.appendChild(table);
+    wrapper.appendChild(tableWrap);
+    bossView.appendChild(wrapper);
+  });
+}
+
+// ─── 테이블 영역 → 이미지로 클립보드 복사 ───────────────────────
+function copyTableAsImage(element, btn) {
+  const isDark = document.documentElement.classList.contains("dark");
+  const bg     = isDark ? "#1e293b" : "#ffffff";
+  btn.textContent = "캡처중...";
+  btn.disabled    = true;
+
+  // 여백을 주기 위한 임시 래퍼
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:inline-block; padding:16px; background:" + bg + ";";
+  const clone = element.cloneNode(true);
+  wrap.appendChild(clone);
+  document.body.appendChild(wrap);
+
+  html2canvas(wrap, {
+    backgroundColor: bg,
+    scale: 2,
+    useCORS: true,
+    logging: false,
+  }).then(canvas => {
+    document.body.removeChild(wrap);
+    canvas.toBlob(blob => {
+      navigator.clipboard.write([new ClipboardItem({ "image/png": blob })])
+        .then(() => {
+          btn.textContent = "복사됨";
+          btn.classList.add("copied");
+          setTimeout(() => {
+            btn.textContent = "복사";
+            btn.classList.remove("copied");
+            btn.disabled = false;
+          }, 1500);
+        })
+        .catch(() => {
+          // 클립보드 실패 시 다운로드 폴백
+          const a = document.createElement("a");
+          a.href     = canvas.toDataURL("image/png");
+          a.download = "raid.png";
+          a.click();
+          btn.textContent = "복사";
+          btn.disabled    = false;
+        });
+    }, "image/png");
+  }).catch(() => {
+    document.body.removeChild(wrap);
+    btn.textContent = "복사";
+    btn.disabled    = false;
+  });
+}
+
+// ─── 뷰 전환 ─────────────────────────────────────────────────────
+function renderView(seasonKey) {
+  const type = document.getElementById("typeSelect").value;
+  if (type === "boss") {
+    document.getElementById("basicView").style.display = "none";
+    document.getElementById("bossView").style.display  = "";
+    renderBossView(seasonKey);
+  } else {
+    document.getElementById("basicView").style.display = "";
+    document.getElementById("bossView").style.display  = "none";
+    renderRaidTable(seasonKey);
+  }
+}
+
+// ─── 이벤트 ──────────────────────────────────────────────────────
+seasonSelect.addEventListener("change", () => renderView(seasonSelect.value));
+document.getElementById("compactToggle").addEventListener("change", () => renderView(seasonSelect.value));
+document.getElementById("typeSelect").addEventListener("change", () => renderView(seasonSelect.value));
+document.getElementById("deckToggle").addEventListener("change", () => renderView(seasonSelect.value));
+
+document.getElementById("copyBasicBtn").addEventListener("click", function() {
+  copyTableAsImage(document.getElementById("raidTable"), this);
+});
+
+renderView(seasonSelect.value);
 </script>
 
 <script>

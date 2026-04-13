@@ -67,7 +67,7 @@
     <!-- 모바일 탭 -->
     <div class="mobile-tabs" id="mobileTabs">
       <button class="mobile-tab active" data-tab="member">유니온 멤버</button>
-      <button class="mobile-tab" data-tab="deck">유니온레이드 추천덱</button>
+      <button class="mobile-tab" data-tab="deck" style="display:none;">유니온레이드 추천덱</button>
     </div>
 
     <!-- ② 좌: 유니온 멤버 | 우: 공지사항 + 순위 차트 -->
@@ -84,6 +84,10 @@
                 <th>닉네임</th>
                 <th>싱크로레벨</th>
                 <th>역할</th>
+                <th style="text-align:center">노말</th>
+                <th style="text-align:center">하드</th>
+                <th style="text-align:center">타워</th>
+                <th style="text-align:center">오버클럭</th>
                 <th style="text-align:center">시프티패드</th>
               </tr>
             </thead>
@@ -93,7 +97,7 @@
       </div>
 
       <!-- 우: 유니온레이드 추천덱 -->
-      <div class="right-col">
+      <div class="right-col" style="display:none;">
         <div class="card" id="deckSection">
           <div class="section-title-row">
             <div class="section-title">유니온레이드 추천덱</div>
@@ -208,6 +212,10 @@ sorted.forEach((m, i) => {
     '<td class="primary">' + m.name + '</td>' +
     '<td><span style="font-weight:600;color:var(--text)">' + m.syncroLevel + '</span> ' + diffHtml + '</td>' +
     '<td><span class="badge ' + (ROLE_BADGE[role] || "badge-member") + '">' + (ROLE_DISPLAY[role] || "일반") + '</span></td>' +
+    '<td class="center">' + (m.normal      != null ? m.normal      : "—") + '</td>' +
+    '<td class="center">' + (m.hard        != null ? m.hard        : "—") + '</td>' +
+    '<td class="center">' + (m.tribeTower  != null ? m.tribeTower  : "—") + '</td>' +
+    '<td class="center">' + (m.overclock   != null ? m.overclock   : "—") + '</td>' +
     '<td class="center"><a href="' + bbUrl + '" target="_blank" class="bblink" title="시프티패드 프로필 보기">' +
       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
         '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>' +

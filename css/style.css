@@ -134,7 +134,7 @@ html.dark header { background: rgba(30,41,59,0.95); }
 .kakao-btn:hover { background: #f0d800; }
 
 nav {
-  display: none;
+  display: flex;
 }
 
 nav a {

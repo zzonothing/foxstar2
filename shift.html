@@ -142,7 +142,6 @@
     <nav>
       <a href="index.html">홈</a>
       <a href="raid.html">유니온레이드</a>
-      <a href="solo.html">솔로레이드</a>
       <a href="shift.html" class="active">시프티패드</a>
     </nav>
   </div>
@@ -243,6 +242,18 @@ seasonSelect.value = seasonKeys[seasonKeys.length - 1];
 const charSelect   = document.getElementById("charSelect");
 const memberSelect = document.getElementById("memberSelect");
 
+// S39 기준 우선순위 캐릭터 목록
+const PRIORITY_CHARS = new Set([
+  "나가", "나유타", "도로시 : 세렌디피티", "디젤 : 윈터 스위츠",
+  "라피 : 레드 후드", "레드 후드", "레이븐", "루드밀라 : 윈터 오너",
+  "루주", "리버렐리오", "리타", "리틀 머메이드",
+  "마리", "마스트 : 로망틱 메이드", "메이든 : 아이스 로즈", "목단",
+  "미란다", "미하라 : 본딩 체인", "벨벳", "브리드 : 사일런트 트랙",
+  "스노우 화이트", "스노우 화이트 : 헤비암즈", "신데렐라", "아니스 : 스파클링 서머",
+  "에이드 : 에이전트 바니", "이브", "일레그 : 붐 앤 쇼크", "크라운",
+  "프리바티", "헬름", "헬름 : 아쿠아마린", "홍련 : 흑영",
+]);
+
 function buildCharSelect(season) {
   const data = UNION[season];
   charSelect.innerHTML = "";
@@ -262,21 +273,55 @@ function buildCharSelect(season) {
     });
   });
 
-  // element 순 → 이름 순 정렬
-  const sorted = [...seen.entries()].sort((a, b) => {
+  // element 순 → 이름 순 정렬 함수
+  function elemNameSort(a, b) {
     const ei = ELEMENT_ORDER.indexOf(a[1]);
     const ej = ELEMENT_ORDER.indexOf(b[1]);
     const diff = (ei === -1 ? 99 : ei) - (ej === -1 ? 99 : ej);
     return diff !== 0 ? diff : a[0].localeCompare(b[0], "ko");
-  });
+  }
 
-  sorted.forEach(([name, element]) => {
-    const emoji = ELEMENT_EMOJI[element] || "⚪";
-    const opt   = document.createElement("option");
-    opt.value       = name;
-    opt.textContent = emoji + " " + name;
-    charSelect.appendChild(opt);
-  });
+  const priority = [...seen.entries()].filter(([name]) =>  PRIORITY_CHARS.has(name)).sort(elemNameSort);
+  const rest     = [...seen.entries()].filter(([name]) => !PRIORITY_CHARS.has(name)).sort(elemNameSort);
+
+  // 우선순위 그룹 구분선
+  if (priority.length > 0 && rest.length > 0) {
+    const sep = document.createElement("option");
+    sep.disabled     = true;
+    sep.textContent  = "── 주요 캐릭터 ──";
+    sep.style.color  = "var(--text-sub)";
+    charSelect.appendChild(sep);
+
+    priority.forEach(([name, element]) => {
+      const emoji = ELEMENT_EMOJI[element] || "⚪";
+      const opt   = document.createElement("option");
+      opt.value       = name;
+      opt.textContent = emoji + " " + name;
+      charSelect.appendChild(opt);
+    });
+
+    const sep2 = document.createElement("option");
+    sep2.disabled    = true;
+    sep2.textContent = "── 기타 캐릭터 ──";
+    sep2.style.color = "var(--text-sub)";
+    charSelect.appendChild(sep2);
+
+    rest.forEach(([name, element]) => {
+      const emoji = ELEMENT_EMOJI[element] || "⚪";
+      const opt   = document.createElement("option");
+      opt.value       = name;
+      opt.textContent = emoji + " " + name;
+      charSelect.appendChild(opt);
+    });
+  } else {
+    [...priority, ...rest].forEach(([name, element]) => {
+      const emoji = ELEMENT_EMOJI[element] || "⚪";
+      const opt   = document.createElement("option");
+      opt.value       = name;
+      opt.textContent = emoji + " " + name;
+      charSelect.appendChild(opt);
+    });
+  }
 }
 
 function buildMemberSelect(season) {

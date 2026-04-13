@@ -3,7 +3,10 @@
     "allow": [
       "Bash(awk 'NR>=154670 {lines[NR]=$0} NR>=154671 && /\\\\\"syncroLevel\\\\\"/ && NR<=180000 {print NR-1\": \"lines[NR-1]}' \"c:/Users/user/Desktop/foxstar2/data/union.js\")",
       "Bash(python3 -c ':*)",
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "Bash(python3 -)",
+      "Bash(node -)",
+      "Bash(grep -o '\\\\[.\\\\{1,10\\\\}\\\\]' \"c:/Users/user/Desktop/foxstar2/data/raid.js\")"
     ]
   }
 }

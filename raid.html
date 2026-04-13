@@ -273,15 +273,18 @@ const DECK_IMG_FALLBACK = "data:image/svg+xml," + encodeURIComponent(
   '</svg>'
 );
 
-function deckImagesHtml(squad) {
-  if (!squad || !squad.length) return "";
-  const sorted = [...squad].sort((a, b) => a.slot - b.slot);
-  const imgs = sorted.map(c =>
-    '<img src="' + charImgPath(c.name) + '" title="' + c.name + '" ' +
-    'style="width:24px;height:24px;border-radius:3px;object-fit:cover;flex-shrink:0;" ' +
-    'onerror="this.onerror=null;this.src=\'' + DECK_IMG_FALLBACK + '\'">'
-  ).join("");
-  return '<div style="display:flex;gap:2px;margin-top:5px;justify-content:center;">' + imgs + '</div>';
+function deckImagesHtml(squads) {
+  if (!squads || !squads.length) return "";
+  return squads.map(squad => {
+    if (!squad || !squad.length) return "";
+    const sorted = [...squad].sort((a, b) => a.slot - b.slot);
+    const imgs = sorted.map(c =>
+      '<img src="' + charImgPath(c.name) + '" title="' + c.name + '" ' +
+      'style="width:24px;height:24px;border-radius:3px;object-fit:cover;flex-shrink:0;" ' +
+      'onerror="this.onerror=null;this.src=\'' + DECK_IMG_FALLBACK + '\'">'
+    ).join("");
+    return '<div style="display:flex;gap:2px;margin-top:5px;justify-content:center;">' + imgs + '</div>';
+  }).join("");
 }
 
 // ─── 보스 코드 → 약점 속성 매핑 ─────────────────────────────────
@@ -376,17 +379,12 @@ function renderRaidTable(seasonKey) {
 
   // ── 멤버 데이터 가공 (총대미지 합산 → 내림차순 정렬) ────────
   const rows = members.map(m => {
-    const raidMap = {}; // bossName → { dmg, count, finalHit, squad, maxDmg }
+    const raidMap = {}; // bossName → { dmg, count, finalHit, squads }
     let total = 0;
     m.raids.forEach(r => {
-      if (!raidMap[r.bossName]) raidMap[r.bossName] = { dmg: 0, count: 0, finalHit: false, squad: r.squad, maxDmg: 0 };
-      raidMap[r.bossName].dmg      += r.totalDamage;
-      raidMap[r.bossName].count    += 1;
-      raidMap[r.bossName].finalHit  = raidMap[r.bossName].finalHit || r.isFinalHit;
-      if (r.totalDamage > raidMap[r.bossName].maxDmg) {
-        raidMap[r.bossName].maxDmg = r.totalDamage;
-        raidMap[r.bossName].squad  = r.squad;
-      }
+      if (!raidMap[r.bossName]) raidMap[r.bossName] = { dmg: 0, hits: [] };
+      raidMap[r.bossName].dmg += r.totalDamage;
+      raidMap[r.bossName].hits.push({ dmg: r.totalDamage, finalHit: r.isFinalHit, squad: r.squad, bossLevel: r.bossLevel });
       total += r.totalDamage;
     });
     return { ...m, total, raidMap };
@@ -428,12 +426,12 @@ function renderRaidTable(seasonKey) {
       const elem  = getBossElem(bossName);
       if (entry) {
         td.className = "td-damage " + (elem ? "td-boss-" + elem : "td-boss");
-        const dmgStyle = entry.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
-        td.innerHTML = '<span' + dmgStyle + '>' + fmt(entry.dmg) + '</span>' +
-          (entry.count > 1
-            ? ' <span style="font-size:10px;font-weight:700;color:var(--text-sub);margin-left:3px;">' + entry.count + '타</span>'
-            : "") +
-          (showDeck ? deckImagesHtml(entry.squad) : "");
+        td.innerHTML = entry.hits.map(hit => {
+          const dmgStyle = hit.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
+          return '<span style="font-size:11px;color:var(--text-sub);margin-right:4px;">Lv.' + hit.bossLevel + '</span>' +
+            '<span' + dmgStyle + '>' + fmt(hit.dmg) + '</span>' +
+            (showDeck ? deckImagesHtml([hit.squad]) : "");
+        }).join('<div style="margin-top:6px;"></div>');
       } else {
         td.className   = "td-empty td-boss-empty";
         td.textContent = "";
@@ -478,15 +476,15 @@ function renderRaidTable(seasonKey) {
   bosses.forEach(([bossName]) => {
     const elem  = getBossElem(bossName);
     let sumDmg  = 0;
-    let cnt     = 0;
+    let totalHits = 0;
     rows.forEach(m => {
       const entry = m.raidMap[bossName];
-      if (entry) { sumDmg += entry.dmg; cnt++; }
+      if (entry) { sumDmg += entry.dmg; totalHits += entry.hits.length; }
     });
     const td = document.createElement("td");
     td.className = elem ? "td-boss-" + elem : "";
     if (sumDmg) {
-      td.innerHTML = fmt(sumDmg) + '<div class="td-foot-sub">' + cnt + '명 참여</div>';
+      td.innerHTML = fmt(sumDmg) + '<div class="td-foot-sub">' + totalHits + '회 타격</div>';
     } else {
       td.textContent = "";
     }
@@ -525,17 +523,12 @@ function renderBossView(seasonKey) {
     const elem  = getBossElem(bossName);
     const short = shortBossName(bossName);
 
-    // 이 보스를 공격한 멤버 집계
+    // 이 보스에 대한 타격을 개별 row로 분리
     const bossRows = [];
     members.forEach(m => {
-      const raids = m.raids.filter(r => r.bossName === bossName);
-      if (!raids.length) return;
-      let dmg = 0, count = 0, finalHit = false, squad = null, maxDmg = 0;
-      raids.forEach(r => {
-        dmg += r.totalDamage; count++; finalHit = finalHit || r.isFinalHit;
-        if (r.totalDamage > maxDmg) { maxDmg = r.totalDamage; squad = r.squad; }
+      m.raids.filter(r => r.bossName === bossName).forEach(r => {
+        bossRows.push({ name: m.name, openId: m.openId, dmg: r.totalDamage, finalHit: r.isFinalHit, squad: r.squad, bossLevel: r.bossLevel });
       });
-      bossRows.push({ name: m.name, openId: m.openId, dmg, count, finalHit, squad });
     });
     bossRows.sort((a, b) => b.dmg - a.dmg);
 
@@ -604,12 +597,10 @@ function renderBossView(seasonKey) {
 
       const tdDmg   = document.createElement("td");
       tdDmg.className = "td-damage" + (elem ? " td-boss-" + elem : "");
-      const dmgStyle = row.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
-      tdDmg.innerHTML  = '<span' + dmgStyle + '>' + fmt(row.dmg) + '</span>' +
-        (row.count > 1
-          ? ' <span style="font-size:10px;font-weight:700;color:var(--text-sub);margin-left:3px;">' + row.count + '타</span>'
-          : "") +
-        (showDeckBoss ? deckImagesHtml(row.squad) : "");
+      const dmgStyle  = row.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
+      tdDmg.innerHTML  = '<span style="font-size:11px;color:var(--text-sub);margin-right:4px;">Lv.' + row.bossLevel + '</span>' +
+        '<span' + dmgStyle + '>' + fmt(row.dmg) + '</span>' +
+        (showDeckBoss ? deckImagesHtml([row.squad]) : "");
       tr.appendChild(tdDmg);
 
       tbody.appendChild(tr);
@@ -631,10 +622,11 @@ function renderBossView(seasonKey) {
     tfSync.innerHTML = avgLevel + '<div class="td-foot-sub">평균</div>';
     tfr.appendChild(tfSync);
 
-    const sumDmg = bossRows.reduce((s, r) => s + r.dmg, 0);
+    const sumDmg   = bossRows.reduce((s, r) => s + r.dmg, 0);
+    const hitTotal = bossRows.length;
     const tfDmg  = document.createElement("td");
     tfDmg.className = elem ? "td-boss-" + elem : "";
-    tfDmg.innerHTML  = fmt(sumDmg) + '<div class="td-foot-sub">' + bossRows.length + '명 참여</div>';
+    tfDmg.innerHTML  = fmt(sumDmg) + '<div class="td-foot-sub">' + hitTotal + '회 타격</div>';
     tfr.appendChild(tfDmg);
 
     tfoot.appendChild(tfr);

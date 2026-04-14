@@ -512,5 +512,37 @@ document.querySelectorAll(".mobile-tab").forEach(tab =>
 })();
 </script>
 
+<script>
+(function(){
+  // 우클릭 차단
+  document.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+
+  // 단축키 차단 (F12, Ctrl+Shift+I/J/C, Ctrl+U, Ctrl+S)
+  document.addEventListener("keydown", function(e){
+    if (e.key === "F12") { e.preventDefault(); return; }
+    if (e.ctrlKey && e.shiftKey && ["I","i","J","j","C","c"].includes(e.key)) { e.preventDefault(); return; }
+    if (e.ctrlKey && ["u","U","s","S"].includes(e.key)) { e.preventDefault(); return; }
+  });
+
+  // DevTools 열림 감지 → 페이지 블랭크
+  var devOpen = false;
+  function checkDevTools(){
+    var threshold = 160;
+    var widthDiff  = window.outerWidth  - window.innerWidth  > threshold;
+    var heightDiff = window.outerHeight - window.innerHeight > threshold;
+    if (widthDiff || heightDiff) {
+      if (!devOpen) {
+        devOpen = true;
+        document.body.innerHTML = "";
+        document.title = "";
+      }
+    } else {
+      devOpen = false;
+    }
+  }
+  setInterval(checkDevTools, 1000);
+})();
+</script>
+
 </body>
 </html>

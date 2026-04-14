@@ -3,7 +3,8 @@
     "allow": [
       "Bash(node -e ':*)",
       "Bash(node update_sync.js)",
-      "Bash(node verify_sync.js)"
+      "Bash(node verify_sync.js)",
+      "Bash(echo \"exit: $?\")"
     ]
   }
 }

@@ -64,14 +64,8 @@
       </div>
     </div>
 
-    <!-- 모바일 탭 -->
-    <div class="mobile-tabs" id="mobileTabs">
-      <button class="mobile-tab active" data-tab="member">유니온 멤버</button>
-      <button class="mobile-tab" data-tab="deck" style="display:none;">유니온레이드 추천덱</button>
-    </div>
-
-    <!-- ② 좌: 유니온 멤버 | 우: 공지사항 + 순위 차트 -->
-    <div class="main-layout" id="mainLayout" data-active="member">
+    <!-- ② 유니온 멤버 -->
+    <div class="main-layout">
 
       <!-- 좌: 유니온 멤버 테이블 -->
       <div class="card" id="memberSection">
@@ -96,23 +90,6 @@
         </div>
       </div>
 
-      <!-- 우: 유니온레이드 추천덱 -->
-      <div class="right-col" style="display:none;">
-        <div class="card" id="deckSection">
-          <div class="section-title-row">
-            <div class="section-title">유니온레이드 추천덱</div>
-            <button class="deck-copy-btn" id="deckCopyBtn" title="이미지로 복사">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              복사
-            </button>
-          </div>
-          <div class="deck-panels" id="deckPanels"></div>
-          <div class="deck-copy-toast" id="deckCopyToast">이미지 복사가 완료되었습니다.</div>
-        </div>
-      </div>
     </div>
 
   </div>
@@ -477,25 +454,6 @@ const parts   = last5.map((k, idx) => {
 });
 flowEl.className = "metric-rank-flow rank-flow";
 flowEl.innerHTML = parts.join("");
-</script>
-
-<script>
-// ─── 모바일 탭 전환 ──────────────────────────────────────────────
-const mainLayout = document.getElementById("mainLayout");
-
-function switchTab(which) {
-  mainLayout.dataset.active = which;
-  document.querySelectorAll(".mobile-tab").forEach(t =>
-    t.classList.toggle("active", t.dataset.tab === which)
-  );
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-
-document.querySelectorAll(".mobile-tab").forEach(tab =>
-  tab.addEventListener("click", () => switchTab(tab.dataset.tab))
-);
-
-// 리사이즈 시 데스크탑 → 상태 초기화 불필요 (CSS가 처리)
 </script>
 
 <script>

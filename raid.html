@@ -399,7 +399,7 @@ function renderBossHpSummary(seasonKey) {
   const bosses = [...bossData.entries()].sort((a, b) => a[1].step - b[1].step);
 
   const wrap  = document.createElement("div");
-  wrap.style.cssText = "display:inline-block; overflow-x:auto;";
+  wrap.style.cssText = "display:block; overflow-x:auto; -webkit-overflow-scrolling:touch;";
   const table = document.createElement("table");
   table.className = "boss-hp-table";
 

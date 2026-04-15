@@ -145,13 +145,23 @@ if (prevSeason) {
 
 // ─── 지표 계산 ───────────────────────────────────────────────────
 const members    = currentSeason.members;
-const avgLevel   = (members.reduce((s, m) => s + m.syncroLevel, 0) / members.length).toFixed(2);
+const avgLevel   = members.reduce((s, m) => s + m.syncroLevel, 0) / members.length;
+
+// 이전 시즌 평균 싱크로레벨 비교
+const prevAvgLevelHtml = (() => {
+  if (!prevSeason || !prevSeason.members || prevSeason.members.length === 0) return "";
+  const prevAvg = prevSeason.members.reduce((s, m) => s + m.syncroLevel, 0) / prevSeason.members.length;
+  const diff = avgLevel - prevAvg;
+  const sign = diff >= 0 ? "+" : "";
+  const color = diff > 0 ? "var(--green)" : diff < 0 ? "var(--red)" : "var(--text-sub)";
+  return ' <span style="font-size:0.6em;font-weight:500;color:' + color + ';vertical-align:middle">(' + sign + diff.toFixed(1) + ')</span>';
+})();
 
 // rank가 있는 가장 마지막 시즌을 역순으로 탐색
 const rankKey    = [...seasonKeys].reverse().find(k => UNION[k].rank != null);
 const latestRank = rankKey != null ? UNION[rankKey].rank : null;
 
-document.getElementById("metricAvgLevel").textContent = avgLevel;
+document.getElementById("metricAvgLevel").innerHTML = avgLevel.toFixed(1) + prevAvgLevelHtml;
 
 // 일정 포맷
 const KR_DAYS = ["일","월","화","수","목","금","토"];

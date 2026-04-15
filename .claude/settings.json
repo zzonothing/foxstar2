@@ -4,7 +4,9 @@
       "Bash(node -e ':*)",
       "Bash(node update_sync.js)",
       "Bash(node verify_sync.js)",
-      "Bash(echo \"exit: $?\")"
+      "Bash(echo \"exit: $?\")",
+      "Bash(awk 'NR>=1420 && NR<=1480')",
+      "Bash(awk '/^    \"40\":/{found=1} found && /\"uid\":/{print NR\": \"$0} found && /^    \"/{if\\(NR>179510\\) found=0}' c:/Users/user/Desktop/foxstar2/data/union.js)"
     ]
   }
 }

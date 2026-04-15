@@ -13,70 +13,202 @@
   <style>
     .container { max-width: 1320px; }
 
+    /* ── 카드 ───────────────────────────────────────────────── */
     .raid-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px 22px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      border-radius: 16px;
+      padding: 20px 22px 28px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+    html.dark .raid-card {
+      box-shadow: 0 4px 24px rgba(0,0,0,0.3);
     }
 
-    /* ── 컨트롤 바 ─────────────────────────────────────────── */
-    .raid-controls {
+    /* ── 툴바 ───────────────────────────────────────────────── */
+    .raid-toolbar {
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 18px;
-    }
-    .raid-controls .season-group { margin-right: 0; }
-
-    /* 복사 버튼 */
-    .copy-btn {
-      height: 30px;
-      padding: 0 12px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: var(--bg-muted);
       border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--bg-card);
-      color: var(--text);
-      font-size: 12px;
-      font-family: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s;
+      border-radius: 12px;
+      padding: 10px 16px;
+      margin-bottom: 14px;
     }
-    .copy-btn:hover { background: var(--bg-muted); }
-    .copy-btn.copied { color: var(--blue); border-color: var(--blue); }
-    .raid-controls label {
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .toolbar-divider {
+      width: 1px; height: 20px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* 시즌 셀렉트 */
+    .toolbar-group {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 13px;
-      color: var(--text);
-      cursor: pointer;
-      user-select: none;
     }
-    .raid-controls input[type="checkbox"] {
-      width: 15px;
-      height: 15px;
-      cursor: pointer;
-      accent-color: var(--blue);
+    .toolbar-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      white-space: nowrap;
     }
-    .raid-controls select {
+    .toolbar-select {
       height: 30px;
       padding: 0 8px;
       border: 1px solid var(--border);
-      border-radius: 6px;
+      border-radius: 8px;
       background: var(--bg-card);
       color: var(--text);
       font-size: 13px;
       font-family: inherit;
       cursor: pointer;
       outline: none;
+      transition: border-color 0.15s;
     }
-    .raid-controls select:focus { border-color: var(--blue); }
+    .toolbar-select:focus { border-color: var(--blue); }
 
-    /* ── 테이블 ────────────────────────────────────────────── */
-    .raid-table-wrap { overflow-x: auto; }
+    /* 타입 pill 버튼 */
+    .type-pills {
+      display: flex;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .type-pills input[type="radio"] { display: none; }
+    .type-pills label {
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .type-pills input[type="radio"]:checked + label {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    /* 토글 스위치 */
+    .toggle-wrap {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle-wrap input[type="checkbox"] { display: none; }
+    .toggle-track {
+      position: relative;
+      width: 32px; height: 18px;
+      background: var(--border);
+      border-radius: 9px;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle-thumb {
+      position: absolute;
+      left: 2px; top: 2px;
+      width: 14px; height: 14px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+    .toggle-wrap input:checked + .toggle-track { background: var(--blue); }
+    .toggle-wrap input:checked + .toggle-track .toggle-thumb { transform: translateX(14px); }
+    .toggle-text {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-sub);
+      white-space: nowrap;
+    }
+
+    /* 복사 버튼 */
+    .copy-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 30px; padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .copy-btn:hover { background: var(--bg-muted); border-color: var(--blue); color: var(--blue); }
+    .copy-btn.copied { color: var(--blue); border-color: var(--blue); }
+
+    /* ── 순위 배지 ──────────────────────────────────────────── */
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-muted);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 20px;
+      margin-bottom: 16px;
+    }
+    .rank-badge-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-sub);
+      letter-spacing: .03em;
+    }
+    .rank-badge-sep {
+      width: 1px; height: 16px;
+      background: var(--border);
+    }
+    .rank-badge-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.01em;
+    }
+    .rank-badge-value.unknown {
+      font-size: 14px;
+      color: var(--text-sub);
+    }
+
+    /* ── 복사 버튼 행 ────────────────────────────────────────── */
+    .copy-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      margin-bottom: 10px;
+    }
+
+    /* ── 보스 뷰 타이틀 행 ───────────────────────────────────── */
+    .boss-view-title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .boss-view-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ── 테이블 공통 ─────────────────────────────────────────── */
+    .raid-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     .raid-table {
       width: auto;
       border-collapse: collapse;
@@ -85,68 +217,76 @@
       table-layout: fixed;
     }
     .raid-table th {
-      padding: 9px 14px;
-      font-size: 13px;
+      padding: 10px 14px;
+      font-size: 11px;
       font-weight: 700;
-      color: var(--text);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-sub);
       background: var(--bg-muted);
       text-align: center;
-      border: 1.5px solid #94a3b8;
+      border-top: 1px solid var(--border);
+      border-bottom: 2px solid var(--border);
+      border-right: 1px solid var(--border);
     }
-    .raid-table th:first-child { border-radius: 8px 0 0 0; border-left: 1.5px solid #94a3b8; }
-    .raid-table th:last-child  { border-radius: 0 8px 0 0; }
+    .raid-table th:first-child { border-left: 1px solid var(--border); border-radius: 10px 0 0 0; }
+    .raid-table th:last-child  { border-radius: 0 10px 0 0; }
+    html.dark .raid-table th { border-bottom-color: #4b5563; }
+
     .raid-table td {
-      padding: 10px 14px;
-      border-bottom: 1.5px solid #94a3b8;
-      border-right: 1.5px solid #94a3b8;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
       color: var(--text);
       text-align: center;
       vertical-align: middle;
+      transition: background 0.1s;
     }
-    .raid-table td:first-child { border-left: 1.5px solid #94a3b8; }
-    .raid-table tbody tr:last-child td { border-bottom: 1.5px solid #94a3b8; }
-    .raid-table tbody tr:hover td      { background: var(--bg-muted); }
+    .raid-table td:first-child { border-left: 1px solid var(--border); }
+    .raid-table tbody tr:last-child td { border-bottom: 2px solid var(--border); }
+    .raid-table tbody tr:hover td { background: var(--bg-muted); }
 
     .td-name   { font-weight: 700; color: var(--text); text-align: left !important; }
     .td-damage { font-weight: 600; font-variant-numeric: tabular-nums; }
     .td-total  { font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
     .td-empty  { color: var(--text-dim); }
 
-    /* 전역 thead border 재정의 */
-    .raid-table thead tr { border-bottom: 1.5px solid #94a3b8; }
-
     /* 푸터 */
-    .raid-table tfoot td:first-child { border-left: none; }
     .raid-table tfoot td {
       padding: 10px 14px;
       border: none;
-      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      background: var(--bg-muted);
       font-weight: 700;
       text-align: center;
       vertical-align: top;
       font-size: 13px;
+      color: var(--text-sub);
     }
-    .td-foot-sub { font-size: 11px; font-weight: 500; color: var(--text-sub); margin-top: 2px; }
+    .raid-table tfoot td:first-child { border-left: 1px solid var(--border); border-radius: 0 0 0 10px; }
+    .raid-table tfoot td:last-child  { border-radius: 0 0 10px 0; }
+    .td-foot-sub { font-size: 11px; font-weight: 500; color: var(--text-dim); margin-top: 2px; }
 
-    /* 보스 컬럼 헤더 구분 */
-    .th-boss { }
-    .td-boss  { }
-
-    /* 약점 태그 색상 */
+    /* 약점 태그 */
     .elem-수냉 { color: #3b82f6; }
     .elem-전격 { color: #a855f7; }
     .elem-풍압 { color: #22c55e; }
     .elem-작열 { color: #ef4444; }
     .elem-철갑 { color: #f59e0b; }
 
-    /* 대미지 있는 보스 셀 배경 */
-    .td-boss-수냉 { background: rgba(59,130,246,0.07);  }
-    .td-boss-전격 { background: rgba(168,85,247,0.07);  }
-    .td-boss-풍압 { background: rgba(34,197,94,0.07);   }
-    .td-boss-작열 { background: rgba(239,68,68,0.07);   }
-    .td-boss-철갑 { background: rgba(245,158,11,0.07);  }
+    /* 보스 셀 배경 */
+    .td-boss-수냉 { background: rgba(59,130,246,0.06);  }
+    .td-boss-전격 { background: rgba(168,85,247,0.06);  }
+    .td-boss-풍압 { background: rgba(34,197,94,0.06);   }
+    .td-boss-작열 { background: rgba(239,68,68,0.06);   }
+    .td-boss-철갑 { background: rgba(245,158,11,0.06);  }
+    html.dark .td-boss-수냉 { background: rgba(59,130,246,0.1);  }
+    html.dark .td-boss-전격 { background: rgba(168,85,247,0.1);  }
+    html.dark .td-boss-풍압 { background: rgba(34,197,94,0.1);   }
+    html.dark .td-boss-작열 { background: rgba(239,68,68,0.1);   }
+    html.dark .td-boss-철갑 { background: rgba(245,158,11,0.1);  }
 
-    /* 보스 HP 현황 테이블 */
+    /* ── 보스 HP 현황 테이블 ─────────────────────────────────── */
     .boss-hp-table {
       border-collapse: collapse;
       font-size: 13px;
@@ -160,31 +300,34 @@
     .boss-hp-table col.col-hp    { width: 200px; }
     .boss-hp-table col.col-pct   { width: 150px; }
     .boss-hp-table th {
-      padding: 7px 12px;
-      font-size: 14px;
+      padding: 8px 12px;
+      font-size: 10px;
       font-weight: 700;
-      color: var(--text);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--text-sub);
       background: var(--bg-muted);
       text-align: center;
-      border: 1.5px solid #94a3b8;
-      border-bottom: 1.5px solid #94a3b8;
+      border-top: 1px solid var(--border);
+      border-bottom: 2px solid var(--border);
+      border-right: 1px solid var(--border);
     }
-    .boss-hp-table th:first-child { border-radius: 8px 0 0 0; }
-    .boss-hp-table th:last-child  { border-radius: 0 8px 0 0; }
-    .boss-hp-table thead tr { border-bottom: 1.5px solid #94a3b8; }
+    .boss-hp-table th:first-child { border-left: 1px solid var(--border); border-radius: 10px 0 0 0; }
+    .boss-hp-table th:last-child  { border-radius: 0 10px 0 0; }
+    html.dark .boss-hp-table th { border-bottom-color: #4b5563; }
     .boss-hp-table td {
-      padding: 7px 12px;
-      border-bottom: 1.5px solid #94a3b8;
-      border-right: 1.5px solid #94a3b8;
+      padding: 9px 12px;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
       color: var(--text);
-      font-size: 14px;
+      font-size: 13px;
       text-align: center;
       vertical-align: middle;
     }
-    .boss-hp-table td:first-child { border-left: 1.5px solid #94a3b8; }
-    .boss-hp-table tbody tr:last-child td { border-bottom: 1.5px solid #94a3b8; }
+    .boss-hp-table td:first-child { border-left: 1px solid var(--border); }
+    .boss-hp-table tbody tr:last-child td { border-bottom: 2px solid var(--border); }
     .boss-hp-table tbody tr:hover td { background: var(--bg-muted); }
-    /* 잔여% 셀: 고정 너비 내부 컨테이너로 모든 행의 게이지 정렬 통일 */
+
     .hp-cell-inner {
       display: inline-block;
       width: 148px;
@@ -194,7 +337,7 @@
       display: inline-flex;
       align-items: center;
       gap: 7px;
-      width: 104px; /* bar(58px) + gap(7px) + text(~38px) */
+      width: 104px;
     }
     .hp-pct-text {
       display: inline-block;
@@ -202,25 +345,41 @@
       text-align: left;
     }
     .hp-bar-wrap {
-      width: 58px;
-      flex-shrink: 0;
-      height: 7px;
+      width: 58px; flex-shrink: 0;
+      height: 6px;
       background: var(--border);
-      border-radius: 4px;
+      border-radius: 3px;
       overflow: hidden;
     }
     .hp-bar-fill {
       height: 100%;
-      border-radius: 4px;
+      border-radius: 3px;
       transition: width 0.3s;
     }
 
     /* 보스 컬럼 고정 너비 */
     .th-boss, .td-boss-수냉, .td-boss-전격, .td-boss-풍압,
     .td-boss-작열, .td-boss-철갑, .td-boss-empty {
-      width: 150px;
-      min-width: 150px;
-      max-width: 150px;
+      width: 150px; min-width: 150px; max-width: 150px;
+    }
+
+    /* ── 반응형 ─────────────────────────────────────────────── */
+    @media (max-width: 720px) {
+      .raid-card { padding: 14px 14px 22px; border-radius: 12px; }
+      .raid-toolbar { padding: 10px 12px; gap: 8px; }
+      .toolbar-left, .toolbar-right { gap: 8px; }
+      .toolbar-divider { display: none; }
+      .rank-badge { padding: 7px 14px; }
+      .rank-badge-value { font-size: 17px; }
+    }
+    @media (max-width: 480px) {
+      .raid-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .toolbar-left, .toolbar-right {
+        justify-content: flex-start;
+      }
     }
   </style>
 </head>
@@ -257,32 +416,47 @@
   <div class="container page-content">
     <div class="raid-card">
 
-      <!-- 컨트롤 바 -->
-      <div class="raid-controls">
-        <label class="season-group">
-          시즌:
-          <select id="seasonSelect"></select>
-        </label>
-        <label>
-          타입:
-          <select id="typeSelect">
-            <option value="basic" selected>기본</option>
-            <option value="boss">보스</option>
-          </select>
-        </label>
-        <label>
-          <input type="checkbox" id="compactToggle" checked>
-          대미지 간략히
-        </label>
-        <label>
-          <input type="checkbox" id="deckToggle">
-          덱 보기
-        </label>
+      <!-- 툴바 -->
+      <div class="raid-toolbar">
+        <div class="toolbar-left">
+          <div class="toolbar-group">
+            <span class="toolbar-label">시즌</span>
+            <select id="seasonSelect" class="toolbar-select"></select>
+          </div>
+          <div class="toolbar-divider"></div>
+          <div class="type-pills">
+            <input type="radio" id="typeBasic" name="typeSelect" value="basic" checked>
+            <label for="typeBasic">기본</label>
+            <input type="radio" id="typeBoss" name="typeSelect" value="boss">
+            <label for="typeBoss">보스</label>
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <label class="toggle-wrap" for="compactToggle">
+            <input type="checkbox" id="compactToggle" checked>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-text">간략히</span>
+          </label>
+          <label class="toggle-wrap" for="deckToggle">
+            <input type="checkbox" id="deckToggle">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-text">덱 보기</span>
+          </label>
+        </div>
       </div>
 
-      <!-- 복사 버튼 -->
-      <div id="basicCopyRow" style="display:flex; justify-content:flex-start; margin-bottom:8px;">
-        <button class="copy-btn" id="copyBasicBtn">복사</button>
+      <!-- 순위 + 복사 버튼 행 -->
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+        <div id="raidRankBadge"></div>
+        <div id="basicCopyRow">
+          <button class="copy-btn" id="copyBasicBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            복사
+          </button>
+        </div>
       </div>
 
       <!-- 복사 대상 영역 (보스 HP + 멤버 테이블) -->
@@ -770,10 +944,10 @@ function renderBossView(seasonKey) {
 
     // 보스 제목 + 복사 버튼 행
     const titleRow = document.createElement("div");
-    titleRow.style.cssText = "display:flex; align-items:center; gap:10px; margin-bottom:8px;";
+    titleRow.className = "boss-view-title-row";
 
     const title = document.createElement("div");
-    title.style.cssText = "font-size: 14px; font-weight: 700; color: var(--text);";
+    title.className = "boss-view-title";
     title.innerHTML = short + (elem ? ' <span class="elem-' + elem + '">[' + elem + ']</span>' : "");
     titleRow.appendChild(title);
 
@@ -927,7 +1101,7 @@ function copyTableAsImage(element, btn) {
 // ─── 뷰 전환 ─────────────────────────────────────────────────────
 function renderView(seasonKey) {
   renderBossHpSummary(seasonKey);
-  const type = document.getElementById("typeSelect").value;
+  const type = (document.querySelector('input[name="typeSelect"]:checked') || {value:"basic"}).value;
   if (type === "boss") {
     document.getElementById("basicCaptureArea").style.display = "none";
     document.getElementById("basicCopyRow").style.display     = "none";
@@ -941,10 +1115,30 @@ function renderView(seasonKey) {
   }
 }
 
+// ─── 시즌 등수 배지 ──────────────────────────────────────────────
+function renderRank(seasonKey) {
+  const el       = document.getElementById("raidRankBadge");
+  const unionKey = seasonKey.replace("S", "");
+  const rank     = UNION[unionKey] && UNION[unionKey].rank;
+  el.innerHTML =
+    '<div class="rank-badge">' +
+      '<span class="rank-badge-label">순위</span>' +
+      '<span class="rank-badge-sep"></span>' +
+      (rank != null
+        ? '<span class="rank-badge-value">🏆 ' + rank + '위</span>'
+        : '<span class="rank-badge-value unknown">미정</span>') +
+    '</div>';
+}
+
 // ─── 이벤트 ──────────────────────────────────────────────────────
-seasonSelect.addEventListener("change", () => renderView(seasonSelect.value));
+seasonSelect.addEventListener("change", () => {
+  renderView(seasonSelect.value);
+  renderRank(seasonSelect.value);
+});
 document.getElementById("compactToggle").addEventListener("change", () => renderView(seasonSelect.value));
-document.getElementById("typeSelect").addEventListener("change", () => renderView(seasonSelect.value));
+document.querySelectorAll('input[name="typeSelect"]').forEach(r =>
+  r.addEventListener("change", () => renderView(seasonSelect.value))
+);
 document.getElementById("deckToggle").addEventListener("change", () => renderView(seasonSelect.value));
 
 document.getElementById("copyBasicBtn").addEventListener("click", function() {
@@ -952,6 +1146,7 @@ document.getElementById("copyBasicBtn").addEventListener("click", function() {
 });
 
 renderView(seasonSelect.value);
+renderRank(seasonSelect.value);
 </script>
 
 <script>

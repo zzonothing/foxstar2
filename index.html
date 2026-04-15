@@ -83,6 +83,15 @@
                 <th style="text-align:center">타워</th>
                 <th style="text-align:center">오버클럭</th>
                 <th style="text-align:center">시프티패드</th>
+                <th class="col-outpost" style="text-align:center">공용 연구</th>
+                <th class="col-outpost" style="text-align:center">화력형</th>
+                <th class="col-outpost" style="text-align:center">방어형</th>
+                <th class="col-outpost" style="text-align:center">지원형</th>
+                <th class="col-outpost" style="text-align:center">미실리스</th>
+                <th class="col-outpost" style="text-align:center">엘리시온</th>
+                <th class="col-outpost" style="text-align:center">테트라</th>
+                <th class="col-outpost" style="text-align:center">필그림</th>
+                <th class="col-outpost" style="text-align:center">어브노멀</th>
               </tr>
             </thead>
             <tbody id="memberTableBody"></tbody>
@@ -124,10 +133,14 @@ const prevKey       = seasonKeys.length >= 2 ? seasonKeys[seasonKeys.length - 2]
 const currentSeason = UNION[latestKey];
 const prevSeason    = prevKey ? UNION[prevKey] : null;
 
-// 이전 시즌 멤버 uid 맵
-const prevMemberMap = {};
+// 이전 시즌 멤버 매핑 (uid 우선, 없으면 닉네임으로 폴백)
+const prevMemberByUid  = {};
+const prevMemberByName = {};
 if (prevSeason) {
-  prevSeason.members.forEach(m => { prevMemberMap[m.uid] = m; });
+  prevSeason.members.forEach(m => {
+    if (m.uid) prevMemberByUid[m.uid] = m;
+    prevMemberByName[m.name] = m;
+  });
 }
 
 // ─── 지표 계산 ───────────────────────────────────────────────────
@@ -175,6 +188,11 @@ function statCell(val, key) {
   return '<td class="center"' + style + '>' + val + '</td>';
 }
 
+function outpostCell(op, key) {
+  const v = (op && op[key] != null) ? op[key] : "—";
+  return '<td class="col-outpost center" style="font-size:12px;color:var(--text-sub)">' + v + '</td>';
+}
+
 // ─── 평균 상승 계산 (최신 시즌 제외 후 최근 5개 시즌 기준) ──────
 const AVG_RISE_SEASONS = seasonKeys.slice(0, -1).slice(-5).map(String);
 const avgRiseMap = {};
@@ -206,7 +224,7 @@ const sorted = [...members].sort((a, b) => {
 const tbody = document.getElementById("memberTableBody");
 sorted.forEach((m, i) => {
   const role     = ROLE_OVERRIDE[m.name] || m.role || "Member";
-  const prev     = prevMemberMap[m.uid];
+  const prev     = (m.uid ? prevMemberByUid[m.uid] : null) || prevMemberByName[m.name] || null;
   const isNew    = prev == null;
   const diff     = prev != null ? m.syncroLevel - prev.syncroLevel : null;
   const diffHtml = isNew
@@ -237,7 +255,16 @@ sorted.forEach((m, i) => {
         '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>' +
         '<circle cx="12" cy="7" r="4"/>' +
       '</svg>' +
-    '</a></td>';
+    '</a></td>' +
+    outpostCell(m.outpost, "common") +
+    outpostCell(m.outpost, "attack") +
+    outpostCell(m.outpost, "defense") +
+    outpostCell(m.outpost, "support") +
+    outpostCell(m.outpost, "missilis") +
+    outpostCell(m.outpost, "elysion") +
+    outpostCell(m.outpost, "tetra") +
+    outpostCell(m.outpost, "pilgrim") +
+    outpostCell(m.outpost, "abnormal");
   tbody.appendChild(tr);
 });
 
@@ -402,6 +429,7 @@ renderDecks();
   var btn   = document.getElementById("deckCopyBtn");
   var toast = document.getElementById("deckCopyToast");
   var panels = document.getElementById("deckPanels");
+  if (!btn || !toast || !panels) return;
   var toastTimer = null;
 
   function showToast() {
@@ -443,17 +471,16 @@ renderDecks();
 })();
 
 // ─── 순위 추이 (상단 카드) ──────────────────────────────────────
-const last5   = seasonKeys.slice(-5);
-const flowEl  = document.getElementById("metricRankFlow");
-const parts   = last5.map((k, idx) => {
+const flowEl     = document.getElementById("metricRankFlow");
+const rankedKeys = seasonKeys.filter(k => UNION[k].rank != null).slice(-5);
+const flowParts  = rankedKeys.map((k, idx) => {
   const rank   = UNION[k].rank;
-  const val    = rank != null ? rank + "위" : "?";
-  const isLast = idx === last5.length - 1;
-  const span   = '<span class="rank-flow-item' + (rank == null ? ' rank-flow-unknown' : '') + '">' + val + '</span>';
+  const isLast = idx === rankedKeys.length - 1;
+  const span   = '<span class="rank-flow-item">' + rank + "위" + '</span>';
   return isLast ? span : span + '<span class="rank-flow-arrow">→</span>';
 });
 flowEl.className = "metric-rank-flow rank-flow";
-flowEl.innerHTML = parts.join("");
+flowEl.innerHTML = flowParts.length ? flowParts.join("") : '<span style="color:var(--text-dim)">—</span>';
 </script>
 
 <script>

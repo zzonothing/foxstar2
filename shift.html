@@ -145,6 +145,99 @@
     .item-ssr { color: var(--amber);  font-weight: 700; }
     .item-sr  { color: #a855f7;       font-weight: 700; }
     .item-r   { color: var(--blue);   font-weight: 700; }
+
+    /* 클릭 가능한 행 */
+    .shift-table tbody tr { cursor: pointer; }
+
+    /* ── 장비 상세 모달 ─────────────────────────────────────── */
+    .equip-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
+      padding: 16px;
+    }
+    .equip-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      width: 100%; max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+    }
+    .equip-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .equip-charname {
+      display: flex; align-items: center;
+      font-size: 16px; font-weight: 700; color: var(--text);
+    }
+    .equip-meta {
+      font-size: 12px; color: var(--text-sub); margin-top: 3px;
+    }
+    .equip-close {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-sub); font-size: 18px; line-height: 1;
+      padding: 2px 6px; border-radius: 6px;
+    }
+    .equip-close:hover { background: var(--bg-muted); color: var(--text); }
+    .equip-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+      border-radius: 0 0 14px 14px;
+      overflow: hidden;
+    }
+    .equip-part {
+      background: var(--bg-card);
+      padding: 14px 16px;
+    }
+    .equip-part-title {
+      font-size: 10px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--text-sub);
+      margin-bottom: 10px;
+    }
+    .equip-slot {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid var(--bg-muted);
+      font-size: 12px;
+    }
+    .equip-slot:last-child { border-bottom: none; }
+    .equip-slot-name {
+      color: var(--text); flex: 1; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .equip-slot-name.none { color: var(--text-sub); text-align: center; width: 100%; }
+    .equip-slot-val {
+      color: var(--text); font-weight: 700; white-space: nowrap; flex-shrink: 0;
+    }
+    .equip-slot-val.val-blue {
+      color: rgb(80, 180, 255);
+    }
+    /* 최고 티어: 행 전체에 검정 배경 (텍스트 위치 유지) */
+    .equip-slot.slot-max {
+      background: #111827;
+      border-radius: 5px;
+      margin: 1px -12px;
+      padding: 4px 12px;
+      border-bottom: none;
+    }
+    .equip-slot.slot-max .equip-slot-name {
+      color: #fff;
+    }
+    .equip-slot.slot-max .equip-slot-val {
+      color: rgb(80, 180, 255);
+    }
+
+    @media (max-width: 500px) {
+      .equip-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -222,6 +315,20 @@
     </div>
   </div>
 </main>
+
+<!-- ═══════════ 장비 상세 모달 ═══════════ -->
+<div id="equipModal" class="equip-overlay" style="display:none">
+  <div class="equip-card">
+    <div class="equip-header">
+      <div>
+        <div class="equip-charname" id="equipCharName"></div>
+        <div class="equip-meta" id="equipMeta"></div>
+      </div>
+      <button class="equip-close" id="equipClose">✕</button>
+    </div>
+    <div class="equip-grid" id="equipGrid"></div>
+  </div>
+</div>
 
 <!-- ═══════════ 데이터 로드 ═══════════ -->
 <script src="data/config.js"></script>
@@ -392,6 +499,144 @@ function skillHtml(val) {
   return val != null ? val : "—";
 }
 
+// ─── 장비 상세 모달 ──────────────────────────────────────────────
+const EQUIP_PART_LABELS = [
+  { new: "head",  old: ["head",  "body_head"], label: "헤드" },
+  { new: "torso", old: ["body"],               label: "몸통" },
+  { new: "arm",   old: ["hand"],               label: "팔"   },
+  { new: "leg",   old: ["foot"],               label: "다리" }
+];
+
+// 구 포맷 파트키 (headOption1... bodyValue3... 등)
+const OLD_PART_KEYS = {
+  head:  { opts: ["headOption1","headOption2","headOption3"], vals: ["headValue1","headValue2","headValue3"] },
+  body:  { opts: ["bodyOption1","bodyOption2","bodyOption3"], vals: ["bodyValue1","bodyValue2","bodyValue3"] },
+  hand:  { opts: ["handOption1","handOption2","handOption3"], vals: ["handValue1","handValue2","handValue3"] },
+  foot:  { opts: ["FootOption1","FootOption2","FootOption3"], vals: ["FootValue1","FootValue2","FootValue3"] }
+};
+
+// effect 값 → 티어 (blue: 1~3단계, max: 최고단계)
+const VALUE_TIERS = {
+  increaseElementDamage:         { blue: 24.96, max: 29.16 },
+  increaseAtk:                   { blue: 12.52, max: 14.63 },
+  increaseHitRate:               { blue: 12.52, max: 14.63 },
+  increaseChargeDamage:          { blue: 12.52, max: 14.63 },
+  increaseDef:                   { blue: 12.52, max: 14.63 },
+  increaseMaxAmmunitionCapacity: { blue: 73.04, max: 85.37 },
+  increaseChargeSpeed:           { blue: 5.21,  max: 6.09  },
+  increaseCriticalDamage:        { blue: 17.42, max: 20.36 },
+  increaseCriticalRate:          { blue: 6.05,  max: 7.07  }
+};
+
+function valueTier(effect, value) {
+  const t = VALUE_TIERS[effect];
+  if (!t || value == null) return "default";
+  const v = parseFloat(value);
+  if (Math.abs(v - t.max) < 0.005) return "max";
+  if (v >= t.blue - 0.005)         return "blue";
+  return "default";
+}
+
+// effect 키 → 한국어 라벨
+const EFFECT_LABEL = {
+  increaseAtk:                  "공격력 증가",
+  increaseElementDamage:        "우월코드 대미지 증가",
+  increaseCriticalDamage:       "크리티컬 대미지 증가",
+  increaseCriticalRate:         "크리티컬 확률 증가",
+  increaseMaxAmmunitionCapacity:"최대 탄약 수 증가",
+  increaseDef:                  "방어력 증가",
+  increaseHitRate:              "명중률 증가",
+  increaseChargeSpeed:          "차지 스피드 증가",
+  increaseChargeDamage:         "차지 대미지 증가"
+};
+
+function buildPartSlots(ch, partLabel) {
+  const newKey = partLabel.new;
+  const slots  = ch.equipSlots && ch.equipSlots[newKey];
+
+  if (slots) {
+    // 신 포맷: equipSlots.head/torso/arm/leg → [{effect, value}, ...]
+    const result = [];
+    for (let i = 0; i < 3; i++) {
+      const s = slots[i];
+      if (!s) { result.push({ text: null, val: null, effect: null }); continue; }
+      result.push({ text: EFFECT_LABEL[s.effect] || s.effect, val: s.value, effect: s.effect });
+    }
+    return result;
+  }
+
+  // 구 포맷 폴백: headOption1/2/3 + headValue1/2/3 ...
+  const oldKey = partLabel.old[0];
+  const pk     = OLD_PART_KEYS[oldKey];
+  if (!pk) return [{ text: null, val: null, effect: null }, { text: null, val: null, effect: null }, { text: null, val: null, effect: null }];
+  return pk.opts.map((oKey, i) => {
+    const raw  = ch[oKey];
+    const val  = ch[pk.vals[i]];
+    const text = raw ? raw.replace(/^\[|\]$/g, "").trim() : null;
+    // 구 포맷은 effect 키가 없으므로 option 텍스트로 역매핑
+    const effect = Object.keys(EFFECT_LABEL).find(k => EFFECT_LABEL[k] === text) || null;
+    return { text: (text === "효과 없음" ? null : text), val, effect };
+  });
+}
+
+function openEquipModal(member, ch) {
+  const modal  = document.getElementById("equipModal");
+  const grid   = document.getElementById("equipGrid");
+  const charEl = document.getElementById("equipCharName");
+  const metaEl = document.getElementById("equipMeta");
+
+  charEl.innerHTML = elementDot(ch.element) + (ch.name + (ch.subName ? " · " + ch.subName : ""));
+  metaEl.textContent = member.name + "  ·  " + (ch.upgrade || "—") + "  ·  " + (ch.element || "—");
+
+  grid.innerHTML = "";
+  EQUIP_PART_LABELS.forEach(p => {
+    const part = document.createElement("div");
+    part.className = "equip-part";
+
+    const title = document.createElement("div");
+    title.className = "equip-part-title";
+    title.textContent = p.label;
+    part.appendChild(title);
+
+    buildPartSlots(ch, p).forEach(({ text, val, effect }) => {
+      const isNone = !text;
+      const tier   = (!isNone && val != null && val !== 0) ? valueTier(effect, val) : "default";
+      const row    = document.createElement("div");
+      row.className = "equip-slot" + (tier === "max" ? " slot-max" : "");
+
+      const nameEl = document.createElement("span");
+      nameEl.className = "equip-slot-name" + (isNone ? " none" : "");
+      nameEl.textContent = isNone ? "효과 없음" : text;
+      row.appendChild(nameEl);
+
+      if (!isNone && val != null && val !== 0) {
+        const valEl = document.createElement("span");
+        valEl.className = "equip-slot-val" + (tier === "blue" ? " val-blue" : "");
+        valEl.textContent = val + "%";
+        row.appendChild(valEl);
+      }
+
+      part.appendChild(row);
+    });
+
+    grid.appendChild(part);
+  });
+
+  modal.style.display = "flex";
+}
+
+function closeEquipModal() {
+  document.getElementById("equipModal").style.display = "none";
+}
+
+document.getElementById("equipClose").addEventListener("click", closeEquipModal);
+document.getElementById("equipModal").addEventListener("click", function(e) {
+  if (e.target === this) closeEquipModal();
+});
+document.addEventListener("keydown", function(e) {
+  if (e.key === "Escape") closeEquipModal();
+});
+
 // ─── 테이블 렌더링 ───────────────────────────────────────────────
 function renderTable() {
   const season       = Number(seasonSelect.value);
@@ -434,6 +679,7 @@ function renderTable() {
 
   displayRows.forEach(({ member, ch }, i) => {
     const tr = document.createElement("tr");
+    tr.addEventListener("click", () => openEquipModal(member, ch));
     tr.innerHTML =
       '<td class="td-num">' + (i + 1) + '</td>' +
       '<td class="td-name">' + member.name + '</td>' +

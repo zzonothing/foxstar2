@@ -672,3 +672,11 @@ html.dark .chip-iron { background: #1c1407; color: #fde047; border-color: #713f1
   .metric-value { font-size: 16px; }
   .kakao-btn span { display: none; }
 }
+
+/* ══════════════════════════════════════════════════════
+   아웃포스트 컬럼 (넓은 화면에서만 표시)
+══════════════════════════════════════════════════════ */
+.col-outpost { display: table-cell; }
+@media (max-width: 960px) {
+  .col-outpost { display: none; }
+}

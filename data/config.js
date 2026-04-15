@@ -12,7 +12,7 @@ const CONFIG = {
   // 확정 전: null → "미정" 으로 표시
   // 확정 후: { start: "YYYY-MM-DD", end: "YYYY-MM-DD" } 로 입력
   schedule: {
-    unionRaid: { start: "2026-04-10", end: "2026-04-11" },
+    unionRaid: null,
     // 예시: unionRaid: { start: "2026-04-11", end: "2026-04-12" },
     soloRaid:  null,
     // 예시: soloRaid:  { start: "2026-04-15", end: "2026-04-21" },

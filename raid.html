@@ -363,6 +363,17 @@
       width: 150px; min-width: 150px; max-width: 150px;
     }
 
+    /* ── 보스 뷰 그리드 ─────────────────────────────────────── */
+    #bossView {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      #bossView { grid-template-columns: 1fr; }
+    }
+
     /* ── 반응형 ─────────────────────────────────────────────── */
     @media (max-width: 720px) {
       .raid-card { padding: 14px 14px 22px; border-radius: 12px; }
@@ -940,7 +951,7 @@ function renderBossView(seasonKey) {
     bossRows.sort((a, b) => b.dmg - a.dmg);
 
     const wrapper = document.createElement("div");
-    wrapper.style.cssText = "margin-bottom: 28px;";
+    wrapper.style.minWidth = "0"; /* grid child overflow 방지 */
 
     // 보스 제목 + 복사 버튼 행
     const titleRow = document.createElement("div");

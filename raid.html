@@ -840,16 +840,17 @@ function shortBossName(name) {
 const seasonKeys   = Object.keys(RAID).sort((a, b) => {
   const na = Number(a.replace("S", ""));
   const nb = Number(b.replace("S", ""));
-  return na - nb;
+  return nb - na;
 });
 const seasonSelect = document.getElementById("seasonSelect");
 seasonKeys.forEach(k => {
-  const opt = document.createElement("option");
+  const opt  = document.createElement("option");
+  const rank = UNION[k.replace("S", "")] && UNION[k.replace("S", "")].rank;
   opt.value       = k;
-  opt.textContent = k;
+  opt.textContent = rank != null ? k + " (" + rank + "위)" : k;
   seasonSelect.appendChild(opt);
 });
-seasonSelect.value = seasonKeys[seasonKeys.length - 1];
+seasonSelect.value = seasonKeys[0];
 
 // ─── 렌더링 ──────────────────────────────────────────────────────
 function renderRaidTable(seasonKey) {

@@ -65,7 +65,7 @@ When adding a new season, append a new top-level key to `UNION` in `api/_data/me
 
 ### Caching
 
-`vercel.json` sets aggressive `Cache-Control` for `/css/*` (1 day) and `/image/*` (1 week). Authenticated data responses are `private, max-age=3600` — do not make them `public` (they'd leak through CDN).
+`vercel.json` sets aggressive `Cache-Control` for `/css/*` (1 day) and `/image/*` (1 week). **Data responses (`/api/data`) are always `no-store`** — both authed and unauthed. This is intentional: a previous `private, max-age=3600` on authed responses caused a serious bug where the browser would serve cached authed data files after session expiry, bypassing the `__AUTH_REQUIRED` redirect on pages whose data files were all cached (typically `index.html` + `raid.html` since `member.js`/`raid.js` were cached but `character.js` was not). Do not re-introduce caching here without a per-request auth check (e.g. via ETag revalidation).
 
 ### Theming
 

@@ -1375,12 +1375,10 @@ function renderView(seasonKey) {
   const type = (document.querySelector('input[name="typeSelect"]:checked') || {value:"basic"}).value;
   if (type === "boss") {
     document.getElementById("basicCaptureArea").style.display = "none";
-    document.getElementById("basicCopyRow").style.display     = "none";
     document.getElementById("bossView").style.display         = "";
     renderBossView(seasonKey);
   } else {
     document.getElementById("basicCaptureArea").style.display = "";
-    document.getElementById("basicCopyRow").style.display     = "flex";
     document.getElementById("bossView").style.display         = "none";
     renderRaidTable(seasonKey);
   }

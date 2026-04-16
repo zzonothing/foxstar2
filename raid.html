@@ -501,6 +501,9 @@
       <!-- 보스 뷰 -->
       <div id="bossView" style="display:none;"></div>
 
+      <!-- 덱 사용 현황 -->
+      <div id="deckUsageSection"></div>
+
     </div>
   </div>
 </main>
@@ -616,9 +619,7 @@ function fmtFull(num) {
 
 // ─── 캐릭터 이미지 경로 ──────────────────────────────────────────
 function charImgPath(name) {
-  // "홍련 : 흑영" → "홍련_흑영", " : " → "_"
-  const fileName = name.replace(" : ", "_");
-  return "image/" + encodeURIComponent(fileName) + ".webp";
+  return "image/" + name.replace(" : ", "_") + ".webp";
 }
 
 const DECK_IMG_FALLBACK = "data:image/svg+xml," + encodeURIComponent(
@@ -1233,6 +1234,141 @@ function copyTableAsImage(element, btn) {
   });
 }
 
+// ─── 덱 key (슬롯 무관, 캐릭터 이름 집합으로 정규화) ────────────
+function deckKey(squad) {
+  if (!squad || !squad.length) return "";
+  return [...squad].map(function(c) { return c.name; }).sort().join("|");
+}
+
+// ─── 덱 사용 현황 렌더링 ──────────────────────────────────────────
+function renderDeckUsage(seasonKey) {
+  const members   = RAID[seasonKey] || [];
+  const container = document.getElementById("deckUsageSection");
+  container.innerHTML = "";
+
+  // 보스 목록 (step 오름차순)
+  const bossMap = new Map();
+  members.forEach(function(m) {
+    m.raids.forEach(function(r) {
+      if (!bossMap.has(r.bossName)) bossMap.set(r.bossName, r.step);
+    });
+  });
+  const bosses = [...bossMap.entries()].sort(function(a, b) { return a[1] - b[1]; });
+  if (!bosses.length) return;
+
+  // 덱 데이터가 아예 없으면 섹션 자체 숨김
+  let hasAnyDeck = false;
+  members.forEach(function(m) {
+    m.raids.forEach(function(r) { if (r.squad && r.squad.length) hasAnyDeck = true; });
+  });
+  if (!hasAnyDeck) return;
+
+  // 구분선 + 섹션 제목
+  const sep = document.createElement("div");
+  sep.style.cssText = "border-top:1px solid var(--border);margin:28px 0 20px;";
+  container.appendChild(sep);
+
+  const sectionTitle = document.createElement("div");
+  sectionTitle.style.cssText = "font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;";
+  sectionTitle.textContent = "덱 사용 현황";
+  container.appendChild(sectionTitle);
+
+  // 보스별 그리드
+  const grid = document.createElement("div");
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;align-items:start;";
+  container.appendChild(grid);
+
+  bosses.forEach(function([bossName]) {
+    const elem  = getBossElem(bossName);
+    const short = shortBossName(bossName);
+
+    // 보스별 덱 집계
+    const deckMap = new Map(); // key → { squad, count }
+    members.forEach(function(m) {
+      m.raids.filter(function(r) { return r.bossName === bossName; }).forEach(function(r) {
+        if (!r.squad || !r.squad.length) return;
+        const key = deckKey(r.squad);
+        if (!deckMap.has(key)) deckMap.set(key, { squad: r.squad, count: 0 });
+        deckMap.get(key).count++;
+      });
+    });
+    if (!deckMap.size) return;
+
+    const sorted = [...deckMap.values()].sort(function(a, b) { return b.count - a.count; });
+
+    const card = document.createElement("div");
+    card.style.minWidth = "0";
+
+    // 소제목
+    const title = document.createElement("div");
+    title.style.cssText = "font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;";
+    title.innerHTML = short + (elem ? ' <span class="elem-' + elem + '">[' + elem + ']</span>' : "");
+    card.appendChild(title);
+
+    const tableWrap = document.createElement("div");
+    tableWrap.className = "raid-table-wrap";
+
+    const table = document.createElement("table");
+    table.className = "raid-table";
+    table.style.width = "100%";
+
+    // thead
+    const thead = document.createElement("thead");
+    const hRow  = document.createElement("tr");
+    [
+      { label: "#",      width: "36px"  },
+      { label: "덱 구성", width: ""      },
+      { label: "횟수",   width: "56px"  },
+    ].forEach(function({ label, width }) {
+      const th = document.createElement("th");
+      th.textContent = label;
+      if (width) { th.style.width = width; th.style.minWidth = width; }
+      hRow.appendChild(th);
+    });
+    thead.appendChild(hRow);
+    table.appendChild(thead);
+
+    // tbody
+    const tbody = document.createElement("tbody");
+    sorted.forEach(function(item, idx) {
+      const tr = document.createElement("tr");
+
+      const tdRank = document.createElement("td");
+      tdRank.textContent = idx + 1;
+      tr.appendChild(tdRank);
+
+      const tdDeck = document.createElement("td");
+      tdDeck.style.textAlign = "left";
+      tdDeck.style.padding   = "8px 10px";
+      // 표시는 slot 순 정렬
+      const bySlot = [...item.squad].sort(function(a, b) { return a.slot - b.slot; });
+      tdDeck.innerHTML =
+        '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">' +
+        bySlot.map(function(c) {
+          return (
+            '<img src="' + charImgPath(c.name) + '" title="' + c.name + '" ' +
+            'style="width:34px;height:34px;border-radius:5px;object-fit:cover;" ' +
+            'onerror="this.onerror=null;this.src=\'' + DECK_IMG_FALLBACK + '\'">'
+          );
+        }).join("") +
+        '</div>';
+      tr.appendChild(tdDeck);
+
+      const tdCount = document.createElement("td");
+      tdCount.style.fontWeight = "700";
+      tdCount.style.color      = "var(--blue)";
+      tdCount.textContent      = item.count + "회";
+      tr.appendChild(tdCount);
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+    card.appendChild(tableWrap);
+    grid.appendChild(card);
+  });
+}
+
 // ─── 뷰 전환 ─────────────────────────────────────────────────────
 function renderView(seasonKey) {
   renderBossHpSummary(seasonKey);
@@ -1248,6 +1384,7 @@ function renderView(seasonKey) {
     document.getElementById("bossView").style.display         = "none";
     renderRaidTable(seasonKey);
   }
+  renderDeckUsage(seasonKey);
 }
 
 // ─── 시즌 등수 배지 ──────────────────────────────────────────────

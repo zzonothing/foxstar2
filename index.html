@@ -760,8 +760,14 @@ renderDecks();
     return (num / 100000000).toFixed(2) + "억";
   }
 
+  function closeMemberModal() {
+    modal.style.display = "none";
+    document.body.style.overflow = "";
+  }
+
   function openMemberModal(name) {
     modal.style.display = "flex";
+    document.body.style.overflow = "hidden";
     modalName.textContent = name;
     modalSub.textContent  = "";
     modalBody.innerHTML   = "";
@@ -1073,14 +1079,12 @@ renderDecks();
   });
 
   // 닫기
-  document.getElementById("memberModalClose").addEventListener("click", () => {
-    modal.style.display = "none";
-  });
+  document.getElementById("memberModalClose").addEventListener("click", closeMemberModal);
   modal.addEventListener("click", function(e) {
-    if (e.target === this) modal.style.display = "none";
+    if (e.target === this) closeMemberModal();
   });
   document.addEventListener("keydown", function(e) {
-    if (e.key === "Escape" && modal.style.display !== "none") modal.style.display = "none";
+    if (e.key === "Escape" && modal.style.display !== "none") closeMemberModal();
   });
 })();
 

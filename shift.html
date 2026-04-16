@@ -362,7 +362,7 @@
     <div class="header-top">
       <div>
         <div class="header-eyebrow">승리의 여신: 니케 · UNION PORTAL</div>
-        <div class="header-title" id="headerTitle">⬡ 여우별 유니온</div>
+        <div class="header-title" id="headerTitle"><img src="image/foxstar.png" alt="" style="width:22px;height:22px;vertical-align:middle;margin-right:6px;border-radius:4px;"> 여우별 유니온</div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
         <button class="theme-toggle" id="themeToggle" title="다크/라이트 모드 전환">🌙</button>
@@ -578,7 +578,7 @@
 <script>
 if (!window.__AUTH_REQUIRED) {
 // ─── 기본 설정 ───────────────────────────────────────────────────
-document.getElementById("headerTitle").textContent = "⬡ " + CONFIG.unionName;
+document.getElementById("headerTitle").innerHTML = '<img src="image/foxstar.png" alt="" style="width:22px;height:22px;vertical-align:middle;margin-right:6px;border-radius:4px;"> ' + CONFIG.unionName;
 document.getElementById("kakaoBtn").href = CONFIG.kakaoUrl;
 document.title = "시프티패드 | " + CONFIG.unionName;
 

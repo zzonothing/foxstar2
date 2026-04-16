@@ -16,7 +16,7 @@
   <script>if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark");</script>
   <style>html{background:#eef1f6}html.dark{background:#111827}</style>
   <link rel="stylesheet" href="css/style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
   <style>
     /* ── 닉네임 클릭 커서 ──────────────────────────────────────── */
     .name-clickable {
@@ -327,7 +327,7 @@
       '<div style="font-size:32px;margin-bottom:8px;">⬡</div>' +
       '<div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;">' + CONFIG.unionName + '</div>' +
       '<div style="font-size:13px;color:var(--text-sub);margin-bottom:28px;">접근하려면 비밀번호를 입력하세요</div>' +
-      '<input id="authInput" type="password" placeholder="비밀번호" autocomplete="off" style="' +
+      '<input id="authInput" type="password" placeholder="비밀번호" autocomplete="current-password" style="' +
         'width:100%;box-sizing:border-box;height:42px;padding:0 14px;' +
         'border:1.5px solid var(--border);border-radius:10px;' +
         'background:var(--bg-muted);color:var(--text);' +
@@ -349,7 +349,6 @@
   const btn   = document.getElementById("authBtn");
   const err   = document.getElementById("authError");
 
-  input.focus();
   input.addEventListener("focus",  function() { this.style.borderColor = "var(--blue)"; });
   input.addEventListener("blur",   function() { this.style.borderColor = "var(--border)"; });
   btn.addEventListener("mouseenter", function() { this.style.opacity = "0.85"; });

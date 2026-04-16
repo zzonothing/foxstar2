@@ -58,8 +58,10 @@ module.exports = function handler(req, res) {
     return res.status(200).send('window.__AUTH_REQUIRED=true;');
   }
 
-  // 인증된 사용자: 브라우저 전용 캐시 1시간 허용 (CDN 캐시 제외)
-  res.setHeader('Cache-Control', 'private, max-age=3600');
+  // 인증된 사용자: 캐시 금지. 과거 인증 시기의 응답이 세션 만료 후에도
+  // 캐시에서 재사용되면 __AUTH_REQUIRED sentinel 이 설정되지 않아 리다
+  // 이렉트가 동작하지 않는 문제 발생. 매 요청 서버에서 세션 재검증.
+  res.setHeader('Cache-Control', 'no-store');
 
   try {
     const content = fs.readFileSync(path.join(DATA_DIR, file), 'utf8');

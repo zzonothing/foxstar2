@@ -441,7 +441,10 @@
       </div>
 
       <!-- 테이블 -->
-      <div id="shiftRowInfo" style="font-size:0.82em;color:var(--text-muted,#9ca3af);text-align:right;margin-bottom:4px;min-height:1.2em;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;min-height:1.2em;font-size:0.82em;color:var(--text-sub);">
+        <span id="shiftDateInfo"></span>
+        <span id="shiftRowInfo"></span>
+      </div>
       <div class="shift-table-wrap">
         <table class="shift-table">
           <thead>
@@ -999,6 +1002,11 @@ function renderTable() {
     infoEl.textContent = totalRows > MAX_ROWS
       ? "총 " + totalRows + "개 중 " + MAX_ROWS + "개 표시"
       : "";
+  }
+
+  const dateEl = document.getElementById("shiftDateInfo");
+  if (dateEl) {
+    dateEl.textContent = data.actionDate ? "기준: " + data.actionDate : "";
   }
 
   displayRows.forEach(({ member, ch }, i) => {

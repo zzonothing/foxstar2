@@ -229,11 +229,11 @@
       </div>
       <div class="metric-card">
         <div class="metric-label">유니온레이드 일정</div>
-        <div class="metric-value" id="metricUnionRaid" style="font-size:15px; line-height:1.4;">미정</div>
+        <div class="metric-value" id="metricUnionRaid" style="font-size:15px; line-height:1.4;">—</div>
       </div>
       <div class="metric-card">
         <div class="metric-label">솔로레이드 일정</div>
-        <div class="metric-value" id="metricSoloRaid" style="font-size:15px; line-height:1.4;">미정</div>
+        <div class="metric-value" id="metricSoloRaid" style="font-size:15px; line-height:1.4;">—</div>
       </div>
     </div>
 
@@ -354,7 +354,7 @@ document.getElementById("metricAvgLevel").innerHTML = avgLevel.toFixed(1) + prev
 // 일정 포맷
 const KR_DAYS = ["일","월","화","수","목","금","토"];
 function formatSchedule(s) {
-  if (!s) return "미정";
+  if (!s) return "—";
   function fmt(str) {
     const d = new Date(str);
     const y = d.getFullYear();

@@ -644,9 +644,10 @@ const ELEM_CHARS = [
 ELEM_CHARS.forEach(function(charNames, idx) {
   const charSet = new Set(charNames);
   const rankList = (latestData.members || []).map(function(member) {
+    // 보유한 캐릭터 중 charSet에 해당하는 것만 추출 (0%도 분모에 포함)
     const ukos = (CHARACTERS[member.uid] || [])
-      .filter(function(ch) { return charSet.has(ch.name) && (ch.increaseElementDamage || 0) > 0; })
-      .map(function(ch) { return ch.increaseElementDamage; });
+      .filter(function(ch) { return charSet.has(ch.name); })
+      .map(function(ch) { return ch.increaseElementDamage || 0; });
     const avg = ukos.length > 0 ? ukos.reduce(function(s, v) { return s + v; }, 0) / ukos.length : 0;
     return { name: member.name, avg: avg, syncro: member.syncroLevel || 0 };
   }).filter(function(r) { return r.avg > 0; })
@@ -661,8 +662,8 @@ const ALL_ELEM_CHARS = new Set(ELEM_CHARS.flat());
 
 const allElemRanked = (latestData.members || []).map(function(member) {
   const ukos = (CHARACTERS[member.uid] || [])
-    .filter(function(ch) { return ALL_ELEM_CHARS.has(ch.name) && (ch.increaseElementDamage || 0) > 0; })
-    .map(function(ch) { return ch.increaseElementDamage; });
+    .filter(function(ch) { return ALL_ELEM_CHARS.has(ch.name); })
+    .map(function(ch) { return ch.increaseElementDamage || 0; });
   const avg = ukos.length > 0 ? ukos.reduce(function(s, v) { return s + v; }, 0) / ukos.length : 0;
   return { name: member.name, avg: avg, syncro: member.syncroLevel || 0 };
 }).filter(function(r) { return r.avg > 0; })
@@ -697,6 +698,34 @@ renderRankTable("itemTbody", itemRanked, "name", "count", null, cntFmt);
     btn.textContent = isDark ? "☀️" : "🌙";
     localStorage.setItem("theme", isDark ? "dark" : "light");
   });
+})();
+</script>
+
+
+<script>
+(function(){
+  document.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+  document.addEventListener("keydown", function(e){
+    if (e.key === "F12") { e.preventDefault(); return; }
+    if (e.ctrlKey && e.shiftKey && ["I","i","J","j","C","c"].includes(e.key)) { e.preventDefault(); return; }
+    if (e.ctrlKey && ["u","U","s","S"].includes(e.key)) { e.preventDefault(); return; }
+  });
+  var devOpen = false;
+  function checkDevTools(){
+    var threshold = 160;
+    var widthDiff  = window.outerWidth  - window.innerWidth  > threshold;
+    var heightDiff = window.outerHeight - window.innerHeight > threshold;
+    if (widthDiff || heightDiff) {
+      if (!devOpen) {
+        devOpen = true;
+        document.body.innerHTML = "";
+        document.title = "";
+      }
+    } else {
+      devOpen = false;
+    }
+  }
+  setInterval(checkDevTools, 1000);
 })();
 </script>
 

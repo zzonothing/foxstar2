@@ -143,24 +143,6 @@
       white-space: nowrap;
     }
 
-    /* 복사 버튼 */
-    .copy-btn {
-      display: inline-flex; align-items: center; gap: 5px;
-      height: 30px; padding: 0 14px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--bg-card);
-      color: var(--text);
-      font-size: 12px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
-    }
-    .copy-btn:hover { background: var(--bg-muted); border-color: var(--blue); color: var(--blue); }
-    .copy-btn.copied { color: var(--blue); border-color: var(--blue); }
-
     /* ── 순위 배지 ──────────────────────────────────────────── */
     .rank-badge {
       display: inline-flex;
@@ -191,14 +173,6 @@
     .rank-badge-value.unknown {
       font-size: 14px;
       color: var(--text-sub);
-    }
-
-    /* ── 복사 버튼 행 ────────────────────────────────────────── */
-    .copy-row {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      margin-bottom: 10px;
     }
 
     /* ── 보스 뷰 타이틀 행 ───────────────────────────────────── */
@@ -472,19 +446,8 @@
         </div>
       </div>
 
-      <!-- 순위 + 복사 버튼 행 -->
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
-        <div id="raidRankBadge"></div>
-        <div id="basicCopyRow">
-          <button class="copy-btn" id="copyBasicBtn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            복사
-          </button>
-        </div>
-      </div>
+      <!-- 순위 배지 -->
+      <div id="raidRankBadge"></div>
 
       <!-- 복사 대상 영역 (보스 HP + 멤버 테이블) -->
       <div id="basicCaptureArea">
@@ -528,7 +491,6 @@
 <script src="data/config.js"></script>
 <script src="data/member.js"></script>
 <script src="data/raid.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <!-- ═══════════ 인증 스크립트 ═══════════ -->
 <script>
@@ -1092,23 +1054,14 @@ function renderBossView(seasonKey) {
       "min-width:0;background:var(--bg-card);border:1px solid var(--border);" +
       "border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.06);";
 
-    // ── 카드 헤더 (보스명 + 복사 버튼) ──────────────────────────
+    // ── 카드 헤더 (보스명) ───────────────────────────────────────
     const cardHeader = document.createElement("div");
     cardHeader.style.cssText =
-      "display:flex;align-items:center;justify-content:space-between;gap:8px;" +
+      "display:flex;align-items:center;gap:6px;" +
       "padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg-muted);";
-
-    const headerLeft = document.createElement("div");
-    headerLeft.style.cssText = "display:flex;align-items:center;gap:6px;";
-    headerLeft.innerHTML =
+    cardHeader.innerHTML =
       '<span style="font-size:13px;font-weight:700;color:var(--text);">' + short + '</span>' +
       (elem ? '<span class="elem-' + elem + '" style="font-size:12px;font-weight:600;">[' + elem + ']</span>' : "");
-    cardHeader.appendChild(headerLeft);
-
-    const copyBtn = document.createElement("button");
-    copyBtn.className   = "copy-btn";
-    copyBtn.textContent = "복사";
-    cardHeader.appendChild(copyBtn);
 
     card.appendChild(cardHeader);
 
@@ -1205,62 +1158,10 @@ function renderBossView(seasonKey) {
     tfoot.appendChild(tfr);
     table.appendChild(tfoot);
 
-    copyBtn.addEventListener("click", function() {
-      copyTableAsImage(tableWrap, this);
-    });
 
     tableWrap.appendChild(table);
     card.appendChild(tableWrap);
     bossView.appendChild(card);
-  });
-}
-
-// ─── 테이블 영역 → 이미지로 클립보드 복사 ───────────────────────
-function copyTableAsImage(element, btn) {
-  const isDark = document.documentElement.classList.contains("dark");
-  const bg     = isDark ? "#1e293b" : "#ffffff";
-  btn.textContent = "캡처중...";
-  btn.disabled    = true;
-
-  // 여백을 주기 위한 임시 래퍼
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "display:inline-block; padding:16px; background:" + bg + ";";
-  const clone = element.cloneNode(true);
-  wrap.appendChild(clone);
-  document.body.appendChild(wrap);
-
-  html2canvas(wrap, {
-    backgroundColor: bg,
-    scale: 2,
-    useCORS: true,
-    logging: false,
-  }).then(canvas => {
-    document.body.removeChild(wrap);
-    canvas.toBlob(blob => {
-      navigator.clipboard.write([new ClipboardItem({ "image/png": blob })])
-        .then(() => {
-          btn.textContent = "복사됨";
-          btn.classList.add("copied");
-          setTimeout(() => {
-            btn.textContent = "복사";
-            btn.classList.remove("copied");
-            btn.disabled = false;
-          }, 1500);
-        })
-        .catch(() => {
-          // 클립보드 실패 시 다운로드 폴백
-          const a = document.createElement("a");
-          a.href     = canvas.toDataURL("image/png");
-          a.download = "raid.png";
-          a.click();
-          btn.textContent = "복사";
-          btn.disabled    = false;
-        });
-    }, "image/png");
-  }).catch(() => {
-    document.body.removeChild(wrap);
-    btn.textContent = "복사";
-    btn.disabled    = false;
   });
 }
 
@@ -1514,9 +1415,6 @@ document.querySelectorAll('input[name="typeSelect"]').forEach(r =>
 document.getElementById("deckToggle").addEventListener("change", () => renderView(seasonSelect.value));
 document.getElementById("lv400Toggle").addEventListener("change", () => renderView(seasonSelect.value));
 
-document.getElementById("copyBasicBtn").addEventListener("click", function() {
-  copyTableAsImage(document.getElementById("basicCaptureArea"), this);
-});
 
 renderView(seasonSelect.value);
 renderRank(seasonSelect.value);

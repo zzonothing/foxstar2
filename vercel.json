@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/data/member.js",    "destination": "/api/data?file=member.js"    },
+    { "source": "/data/raid.js",      "destination": "/api/data?file=raid.js"      },
+    { "source": "/data/character.js", "destination": "/api/data?file=character.js" }
+  ]
+}

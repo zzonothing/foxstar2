@@ -510,26 +510,16 @@
 
 <!-- ═══════════ 데이터 로드 ═══════════ -->
 <script src="data/config.js"></script>
-<script src="data/union.js"></script>
+<script src="data/member.js"></script>
 <script src="data/raid.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <!-- ═══════════ 인증 스크립트 ═══════════ -->
 <script>
 (function() {
-  const STORE = "fstar_auth";
   const overlay = document.getElementById("authOverlay");
 
-  function isAuthed() {
-    return localStorage.getItem(STORE) === btoa(CONFIG.accessKey);
-  }
-
-  function grant() {
-    localStorage.setItem(STORE, btoa(CONFIG.accessKey));
-    overlay.style.display = "none";
-  }
-
-  if (isAuthed()) { overlay.style.display = "none"; return; }
+  if (!window.__AUTH_REQUIRED) { overlay.style.display = "none"; return; }
 
   // 오버레이 내부 렌더
   overlay.innerHTML =
@@ -569,17 +559,27 @@
   btn.addEventListener("mouseleave", function() { this.style.opacity = "1"; });
 
   function attempt() {
-    if (input.value === CONFIG.accessKey) {
-      grant();
-    } else {
-      err.textContent = "비밀번호가 올바르지 않습니다";
-      input.value = "";
-      input.style.borderColor = "#ef4444";
-      setTimeout(function() {
-        err.textContent = "";
-        input.style.borderColor = "var(--border)";
-      }, 2000);
-    }
+    var entered = input.value.trim();
+    if (!entered) return;
+    btn.disabled = true;
+    fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: entered })
+    }).then(function(r) {
+      if (r.ok) {
+        location.reload();
+      } else {
+        err.textContent = "비밀번호가 올바르지 않습니다";
+        input.value = "";
+        input.style.borderColor = "#ef4444";
+        btn.disabled = false;
+        setTimeout(function() {
+          err.textContent = "";
+          input.style.borderColor = "var(--border)";
+        }, 2000);
+      }
+    });
   }
 
   btn.addEventListener("click", attempt);
@@ -589,6 +589,7 @@
 
 <!-- ═══════════ 레이드 스크립트 ═══════════ -->
 <script>
+if (!window.__AUTH_REQUIRED) {
 // ─── 기본 설정 ───────────────────────────────────────────────────
 document.getElementById("headerTitle").textContent = "⬡ " + CONFIG.unionName;
 document.getElementById("kakaoBtn").href = CONFIG.kakaoUrl;
@@ -1277,6 +1278,7 @@ document.getElementById("copyBasicBtn").addEventListener("click", function() {
 
 renderView(seasonSelect.value);
 renderRank(seasonSelect.value);
+} // if (!window.__AUTH_REQUIRED)
 </script>
 
 <script>

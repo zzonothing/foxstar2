@@ -179,15 +179,17 @@
   <div class="container">
     <div class="header-top">
       <div>
-        <a id="headerTitle" class="header-logo" href="index.html">⬡</a>
+        <div class="header-eyebrow">승리의 여신: 니케 · UNION PORTAL</div>
+        <div class="header-title" id="headerTitle">⬡ 여우별 유니온</div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <a id="kakaoBtn" href="#" target="_blank" class="kakao-btn" title="카카오톡 채널">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 3C6.477 3 2 6.477 2 10.909c0 2.803 1.607 5.284 4.09 6.845l-.952 3.512a.25.25 0 0 0 .374.273L9.83 19.01A11.1 11.1 0 0 0 12 19.182c5.523 0 10-3.477 10-7.773C22 6.477 17.523 3 12 3z"/>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="theme-toggle" id="themeToggle" title="다크/라이트 모드 전환">🌙</button>
+        <a id="kakaoBtn" href="#" target="_blank" class="kakao-btn">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="#1a1200">
+            <path d="M12 3C6.48 3 2 6.69 2 11.25c0 2.87 1.76 5.4 4.41 6.95L5.25 21 l3.86-2.06A11.3 11.3 0 0012 19.5c5.52 0 10-3.69 10-8.25S17.52 3 12 3z"/>
           </svg>
+          가입 문의
         </a>
-        <button id="themeToggle" class="theme-btn">🌙</button>
       </div>
     </div>
     <nav>
@@ -354,23 +356,15 @@
 
 <!-- ═══════════ 데이터 로드 ═══════════ -->
 <script src="data/config.js"></script>
-<script src="data/union.js"></script>
+<script src="data/member.js"></script>
+<script src="data/character.js"></script>
 
 <!-- ═══════════ 인증 스크립트 ═══════════ -->
 <script>
 (function() {
-  const STORE = "fstar_auth";
   const overlay = document.getElementById("authOverlay");
 
-  function isAuthed() {
-    return localStorage.getItem(STORE) === btoa(CONFIG.accessKey);
-  }
-  function grant() {
-    localStorage.setItem(STORE, btoa(CONFIG.accessKey));
-    overlay.style.display = "none";
-  }
-
-  if (isAuthed()) { overlay.style.display = "none"; return; }
+  if (!window.__AUTH_REQUIRED) { overlay.style.display = "none"; return; }
 
   overlay.innerHTML =
     '<div style="' +
@@ -408,18 +402,28 @@
   btn.addEventListener("mouseleave", function() { this.style.opacity = "1"; });
 
   function attempt() {
-    if (input.value === CONFIG.accessKey) {
-      grant();
-    } else {
-      err.textContent = "비밀번호가 올바르지 않습니다";
-      input.value = "";
-      input.focus();
-      input.style.borderColor = "#ef4444";
-      setTimeout(function() {
-        err.textContent = "";
-        input.style.borderColor = "var(--border)";
-      }, 2000);
-    }
+    var entered = input.value.trim();
+    if (!entered) return;
+    btn.disabled = true;
+    fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: entered })
+    }).then(function(r) {
+      if (r.ok) {
+        location.reload();
+      } else {
+        err.textContent = "비밀번호가 올바르지 않습니다";
+        input.value = "";
+        input.focus();
+        input.style.borderColor = "#ef4444";
+        btn.disabled = false;
+        setTimeout(function() {
+          err.textContent = "";
+          input.style.borderColor = "var(--border)";
+        }, 2000);
+      }
+    });
   }
 
   btn.addEventListener("click", attempt);
@@ -429,6 +433,7 @@
 
 <!-- ═══════════ 통계 스크립트 ═══════════ -->
 <script>
+if (!window.__AUTH_REQUIRED) {
 // ─── 기본 설정 ───────────────────────────────────────────────────
 document.getElementById("headerTitle").textContent = "⬡ " + CONFIG.unionName;
 document.getElementById("kakaoBtn").href = CONFIG.kakaoUrl;
@@ -458,7 +463,7 @@ document.getElementById("ukoCardTitle").textContent = "캐릭터 평균 우코 T
 const charMap = {}; // name → { total, count, element }
 
 (latestData.members || []).forEach(member => {
-  (member.characters || []).forEach(ch => {
+  (CHARACTERS[member.uid] || []).forEach(ch => {
     const uko = ch.increaseElementDamage || 0;
     if (!charMap[ch.name]) {
       charMap[ch.name] = { total: 0, count: 0, element: ch.element || "" };
@@ -557,7 +562,7 @@ renderRankTable("ukoTableBody", ranked, "name", "avg", function(r) {
 
 // ─── 카드 2: 여우별 평균 우코 TOP 10 (상위 10개 캐릭터) ──────────
 const memberRanked = (latestData.members || []).map(function(member) {
-  const ukos = (member.characters || [])
+  const ukos = (CHARACTERS[member.uid] || [])
     .map(function(ch) { return ch.increaseElementDamage || 0; })
     .filter(function(v) { return v > 0; })
     .sort(function(a, b) { return b - a; })
@@ -572,7 +577,7 @@ renderRankTable("memberUkoTableBody", memberRanked, "name", "avg", null);
 
 // ─── 카드 3: 여우별 평균 우코 TOP 10 (상위 20개 캐릭터) ──────────
 const memberRanked20 = (latestData.members || []).map(function(member) {
-  const ukos = (member.characters || [])
+  const ukos = (CHARACTERS[member.uid] || [])
     .map(function(ch) { return ch.increaseElementDamage || 0; })
     .filter(function(v) { return v > 0; })
     .sort(function(a, b) { return b - a; })
@@ -590,7 +595,7 @@ const cntFmt = function(v) { return v + "개"; };
 
 // ─── 카드 10: 여우별 풀코 TOP 10 ─────────────────────────────────
 const fullcoRanked = (latestData.members || []).map(function(member) {
-  const count = (member.characters || [])
+  const count = (CHARACTERS[member.uid] || [])
     .filter(function(ch) { return ch.upgrade === "풀코"; })
     .length;
   return { name: member.name, count: count, syncro: member.syncroLevel || 0 };
@@ -602,7 +607,7 @@ renderRankTable("fullcoTbody", fullcoRanked, "name", "count", null, cntFmt);
 
 // ─── 카드 9: 여우별 우코 100 이상 개수 TOP 10 ────────────────────
 const ukoCountRanked = (latestData.members || []).map(function(member) {
-  const count = (member.characters || [])
+  const count = (CHARACTERS[member.uid] || [])
     .filter(function(ch) { return (ch.increaseElementDamage || 0) >= 100; })
     .length;
   return { name: member.name, count: count, syncro: member.syncroLevel || 0 };
@@ -624,7 +629,7 @@ const ELEM_CHARS = [
 ELEM_CHARS.forEach(function(charNames, idx) {
   const charSet = new Set(charNames);
   const rankList = (latestData.members || []).map(function(member) {
-    const ukos = (member.characters || [])
+    const ukos = (CHARACTERS[member.uid] || [])
       .filter(function(ch) { return charSet.has(ch.name) && (ch.increaseElementDamage || 0) > 0; })
       .map(function(ch) { return ch.increaseElementDamage; });
     const avg = ukos.length > 0 ? ukos.reduce(function(s, v) { return s + v; }, 0) / ukos.length : 0;
@@ -638,7 +643,7 @@ ELEM_CHARS.forEach(function(charNames, idx) {
 
 // ─── 카드 11: 여우별 소장품 TOP 10 ───────────────────────────────
 const itemRanked = (latestData.members || []).map(function(member) {
-  const count = (member.characters || []).filter(function(ch) {
+  const count = (CHARACTERS[member.uid] || []).filter(function(ch) {
     return (ch.itemGrade === "SR" && ch.itemLevel === 15) || ch.itemGrade === "SSR";
   }).length;
   return { name: member.name, count: count, syncro: member.syncroLevel || 0 };
@@ -647,6 +652,7 @@ const itemRanked = (latestData.members || []).map(function(member) {
 
 renderPodium("podiumWrapItem", itemRanked, "name", "count", null, cntFmt);
 renderRankTable("itemTbody", itemRanked, "name", "count", null, cntFmt);
+} // if (!window.__AUTH_REQUIRED)
 </script>
 
 <!-- ═══════════ 테마 토글 ═══════════ -->

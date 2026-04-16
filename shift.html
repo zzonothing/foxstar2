@@ -386,10 +386,6 @@
       <!-- 컨트롤 바 -->
       <div class="shift-controls">
         <label>
-          <span>시즌</span>
-          <select id="seasonSelect"></select>
-        </label>
-        <label>
           <span>캐릭터</span>
           <div class="char-combo" id="charComboWrap">
             <input type="text" id="charInput" class="char-combo-input" placeholder="전체" autocomplete="off">
@@ -498,24 +494,15 @@
 
 <!-- ═══════════ 데이터 로드 ═══════════ -->
 <script src="data/config.js"></script>
-<script src="data/union.js"></script>
+<script src="data/member.js"></script>
+<script src="data/character.js"></script>
 
 <!-- ═══════════ 인증 스크립트 ═══════════ -->
 <script>
 (function() {
-  const STORE = "fstar_auth";
   const overlay = document.getElementById("authOverlay");
 
-  function isAuthed() {
-    return localStorage.getItem(STORE) === btoa(CONFIG.accessKey);
-  }
-
-  function grant() {
-    localStorage.setItem(STORE, btoa(CONFIG.accessKey));
-    overlay.style.display = "none";
-  }
-
-  if (isAuthed()) { overlay.style.display = "none"; return; }
+  if (!window.__AUTH_REQUIRED) { overlay.style.display = "none"; return; }
 
   overlay.innerHTML =
     '<div style="' +
@@ -553,18 +540,28 @@
   btn.addEventListener("mouseleave", function() { this.style.opacity = "1"; });
 
   function attempt() {
-    if (input.value === CONFIG.accessKey) {
-      grant();
-    } else {
-      err.textContent = "비밀번호가 올바르지 않습니다";
-      input.value = "";
-      input.focus();
-      input.style.borderColor = "#ef4444";
-      setTimeout(function() {
-        err.textContent = "";
-        input.style.borderColor = "var(--border)";
-      }, 2000);
-    }
+    var entered = input.value.trim();
+    if (!entered) return;
+    btn.disabled = true;
+    fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: entered })
+    }).then(function(r) {
+      if (r.ok) {
+        location.reload();
+      } else {
+        err.textContent = "비밀번호가 올바르지 않습니다";
+        input.value = "";
+        input.focus();
+        input.style.borderColor = "#ef4444";
+        btn.disabled = false;
+        setTimeout(function() {
+          err.textContent = "";
+          input.style.borderColor = "var(--border)";
+        }, 2000);
+      }
+    });
   }
 
   btn.addEventListener("click", attempt);
@@ -574,6 +571,7 @@
 
 <!-- ═══════════ 시프티패드 스크립트 ═══════════ -->
 <script>
+if (!window.__AUTH_REQUIRED) {
 // ─── 기본 설정 ───────────────────────────────────────────────────
 document.getElementById("headerTitle").textContent = "⬡ " + CONFIG.unionName;
 document.getElementById("kakaoBtn").href = CONFIG.kakaoUrl;
@@ -601,16 +599,9 @@ function elementDot(element) {
   return '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + color + ';margin-right:5px;vertical-align:middle;flex-shrink:0"></span>';
 }
 
-// ─── 시즌 셀렉터 초기화 ──────────────────────────────────────────
+// ─── 최신 시즌 고정 ──────────────────────────────────────────────
 const seasonKeys   = Object.keys(UNION).map(Number).sort((a, b) => a - b);
-const seasonSelect = document.getElementById("seasonSelect");
-seasonKeys.forEach(k => {
-  const opt = document.createElement("option");
-  opt.value       = k;
-  opt.textContent = "S" + k;
-  seasonSelect.appendChild(opt);
-});
-seasonSelect.value = seasonKeys[seasonKeys.length - 1];
+const latestSeason = seasonKeys[seasonKeys.length - 1];
 
 // ─── 캐릭터 / 멤버 셀렉터 ────────────────────────────────────────
 const memberSelect = document.getElementById("memberSelect");
@@ -640,14 +631,14 @@ function elemNameSort(a, b) {
   return diff !== 0 ? diff : a[0].localeCompare(b[0], "ko");
 }
 
-function buildCharSelect(season) {
-  const data = UNION[season];
+function buildCharSelect() {
+  const data = UNION[latestSeason];
   charAllOptions = [];
 
   if (data) {
     const seen = new Map();
     data.members.forEach(member => {
-      (member.characters || []).forEach(ch => {
+      (CHARACTERS[member.uid] || []).forEach(ch => {
         if (!seen.has(ch.name)) seen.set(ch.name, ch.element || "");
       });
     });
@@ -748,8 +739,8 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape") charDropdown.classList.remove("open");
 });
 
-function buildMemberSelect(season) {
-  const data = UNION[season];
+function buildMemberSelect() {
+  const data = UNION[latestSeason];
   memberSelect.innerHTML = "";
 
   const allOpt = document.createElement("option");
@@ -929,10 +920,9 @@ document.addEventListener("keydown", function(e) {
 
 // ─── 테이블 렌더링 ───────────────────────────────────────────────
 function renderTable() {
-  const season       = Number(seasonSelect.value);
   const filterChar   = charFilterValue;
   const filterMember = memberSelect.value;
-  const data         = UNION[season];
+  const data         = UNION[latestSeason];
   const tbody        = document.getElementById("shiftTableBody");
   tbody.innerHTML    = "";
   if (!data) return;
@@ -941,7 +931,7 @@ function renderTable() {
   const rows = [];
   data.members.forEach(member => {
     if (filterMember && member.name !== filterMember) return;
-    (member.characters || []).forEach(ch => {
+    (CHARACTERS[member.uid] || []).forEach(ch => {
       if (!filterChar || ch.name === filterChar) {
         rows.push({ member, ch });
       }
@@ -1048,20 +1038,16 @@ function renderTable() {
 }
 
 // ─── 이벤트 ──────────────────────────────────────────────────────
-seasonSelect.addEventListener("change", () => {
-  buildCharSelect(Number(seasonSelect.value));
-  buildMemberSelect(Number(seasonSelect.value));
-  renderTable();
-});
 memberSelect.addEventListener("change", renderTable);
 document.getElementById("sortSelect").addEventListener("change", renderTable);
 ["optUko","optAtk","optSum","optAmmo","optCharge","optCritDmg"].forEach(id => {
   document.getElementById(id).addEventListener("change", renderTable);
 });
 
-buildCharSelect(Number(seasonSelect.value));
-buildMemberSelect(Number(seasonSelect.value));
+buildCharSelect();
+buildMemberSelect();
 renderTable();
+} // if (!window.__AUTH_REQUIRED)
 </script>
 
 <script>

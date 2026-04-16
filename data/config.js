@@ -8,9 +8,6 @@ const CONFIG = {
   unionName: "여우별 유니온",
   kakaoUrl:  "https://open.kakao.com/o/gBwHo1tg",  // 가입 문의 오픈톡방 링크
 
-  // 페이지 접근 비밀번호 (유니온레이드·시프티패드)
-  accessKey: "1357",
-
   // 일정 설정
   // 확정 전: null → "미정" 으로 표시
   // 확정 후: { start: "YYYY-MM-DD", end: "YYYY-MM-DD" } 로 입력

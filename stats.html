@@ -318,7 +318,17 @@
         </div>
       </div>
 
-      <!-- 카드 9: 여우별 우코 100 이상 TOP 10 -->
+      <!-- 카드 9: 여우별 모든 속성 TOP 10 -->
+      <div class="stats-card">
+        <div class="stats-section-title">여우별 ALL 속성 TOP 10<br><span style="font-size:11px;font-weight:400;color:var(--text-sub);">5개 속성 언급 캐릭터 전체 평균</span></div>
+        <div class="podium-wrap" id="podiumWrapAllElem"></div>
+        <div style="border-top:1px solid var(--border);margin:20px 0 16px;"></div>
+        <div class="uko-table-wrap">
+          <table class="uko-table"><thead><tr><th>#</th><th class="col-name">닉네임</th><th class="col-num">평균 우코</th></tr></thead><tbody id="elemTbodyAll"></tbody></table>
+        </div>
+      </div>
+
+      <!-- 카드 10: 여우별 우코 100 이상 TOP 10 -->
       <div class="stats-card">
         <div class="stats-section-title">여우별 우코 100 이상 TOP 10</div>
         <div class="podium-wrap" id="podiumWrapCount"></div>
@@ -645,6 +655,21 @@ ELEM_CHARS.forEach(function(charNames, idx) {
   renderPodium("podiumWrap" + (idx + 4), rankList, "name", "avg", null);
   renderRankTable("elemTbody" + idx, rankList, "name", "avg", null);
 });
+
+// ─── 카드 9: 여우별 모든 속성 TOP 10 ────────────────────────────
+const ALL_ELEM_CHARS = new Set(ELEM_CHARS.flat());
+
+const allElemRanked = (latestData.members || []).map(function(member) {
+  const ukos = (CHARACTERS[member.uid] || [])
+    .filter(function(ch) { return ALL_ELEM_CHARS.has(ch.name) && (ch.increaseElementDamage || 0) > 0; })
+    .map(function(ch) { return ch.increaseElementDamage; });
+  const avg = ukos.length > 0 ? ukos.reduce(function(s, v) { return s + v; }, 0) / ukos.length : 0;
+  return { name: member.name, avg: avg, syncro: member.syncroLevel || 0 };
+}).filter(function(r) { return r.avg > 0; })
+  .sort(function(a, b) { return b.avg - a.avg || b.syncro - a.syncro; });
+
+renderPodium("podiumWrapAllElem", allElemRanked, "name", "avg", null);
+renderRankTable("elemTbodyAll", allElemRanked, "name", "avg", null);
 
 // ─── 카드 11: 여우별 소장품 TOP 10 ───────────────────────────────
 const itemRanked = (latestData.members || []).map(function(member) {

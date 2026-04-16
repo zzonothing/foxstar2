@@ -691,15 +691,45 @@ function renderCharDropdown(query) {
   });
 }
 
-// 드롭다운 열기/닫기
-charInput.addEventListener("focus", () => {
-  renderCharDropdown(charInput.value);
-  charDropdown.classList.add("open");
-});
-charInput.addEventListener("input", () => {
-  renderCharDropdown(charInput.value);
-  charDropdown.classList.add("open");
-});
+// iOS 26 visualViewport bug 회피: 터치 디바이스에서는 input 이 focus 만
+// 받아도 iOS 가 내부 viewport 조정을 시도해 sticky header 가 깨지고 회색
+// 화면이 됨 (키보드 미표시 상태에서도 발생). focus 자체를 차단하고 mousedown
+// 으로만 드롭다운 토글. 데스크톱은 영향 없음.
+const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+
+if (isTouchDevice) {
+  charInput.readOnly = true;
+  charInput.tabIndex = -1;
+
+  // mousedown 의 preventDefault 가 click → focus 흐름을 차단함.
+  // touch 이벤트는 mousedown 을 합성하므로 이 한 곳에서 모두 처리됨.
+  charInput.addEventListener("mousedown", function(e) {
+    e.preventDefault();
+    if (charDropdown.classList.contains("open")) {
+      charDropdown.classList.remove("open");
+    } else {
+      renderCharDropdown("");
+      charDropdown.classList.add("open");
+    }
+  });
+
+  // focus 안 받으니 blur 도 안 일어남 → 외부 클릭으로 닫기
+  document.addEventListener("click", function(e) {
+    if (!charComboWrap.contains(e.target)) {
+      charDropdown.classList.remove("open");
+    }
+  });
+} else {
+  // 데스크톱: 기존 focus 기반 동작 유지
+  charInput.addEventListener("focus", () => {
+    renderCharDropdown(charInput.value);
+    charDropdown.classList.add("open");
+  });
+  charInput.addEventListener("input", () => {
+    renderCharDropdown(charInput.value);
+    charDropdown.classList.add("open");
+  });
+}
 charDropdown.addEventListener("mousedown", e => {
   const item = e.target.closest(".char-dropdown-item");
   if (!item) return;

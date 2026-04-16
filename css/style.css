@@ -76,13 +76,15 @@ html.dark ::-webkit-scrollbar-thumb { background: #4b5563; }
 }
 
 /* ── 헤더 ─────────────────────────────────────────────── */
+/* iOS 26 visualViewport 버그 회피: position:sticky/fixed 인 요소가 있으면
+   키보드 등장, 핀치줌, 스크롤 바운스 등 visualViewport 변동 시마다 sticky
+   요소가 뷰포트 밖으로 밀려나며 페이지 layout 이 깨지고 회색 화면 발생.
+   header 를 일반 흐름(static)으로 두어 트리거 조건 자체를 제거. */
 header {
   background: rgba(255,255,255,0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
   z-index: 100;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   transition: background .2s;

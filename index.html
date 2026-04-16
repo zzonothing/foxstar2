@@ -139,11 +139,43 @@
     .rh-final   { color: var(--red); font-weight: 700; }
     .rh-section-row td {
       background: var(--bg-muted);
-      font-size: 11px; font-weight: 700;
+      font-size: 13px; font-weight: 700;
       color: var(--text-sub); padding: 5px 10px;
       border-bottom: 1px solid var(--border);
     }
     .rh-no-data { text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px 0; }
+
+    /* 레이드 히스토리 토글 */
+    .rh-controls {
+      display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-bottom: 10px;
+    }
+    .rh-toggle-wrap {
+      display: flex; align-items: center; gap: 6px;
+      cursor: pointer; user-select: none;
+    }
+    .rh-toggle-wrap input[type="checkbox"] { display: none; }
+    .rh-toggle-track {
+      position: relative;
+      width: 28px; height: 16px;
+      background: var(--border);
+      border-radius: 8px;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .rh-toggle-thumb {
+      position: absolute;
+      left: 2px; top: 2px;
+      width: 12px; height: 12px;
+      background: #fff; border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    }
+    .rh-toggle-wrap input:checked + .rh-toggle-track { background: var(--blue); }
+    .rh-toggle-wrap input:checked + .rh-toggle-track .rh-toggle-thumb { transform: translateX(12px); }
+    .rh-toggle-text { font-size: 12px; font-weight: 500; color: var(--text-sub); }
+    /* 덱 이미지 */
+    .rh-deck-imgs { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 4px; justify-content: center; }
+    .rh-deck-imgs img { width: 36px; height: 36px; border-radius: 4px; object-fit: cover; }
 
     @media (max-width: 480px) {
       .member-overlay { padding: 12px; }
@@ -847,52 +879,109 @@ renderDecks();
         raidSection.appendChild(svg);
       })();
 
-      // ── 상세 테이블 ──────────────────────────────────────────
+      // ── 캐릭터 이미지 헬퍼 ───────────────────────────────────────
+      function charImgPath(charName) {
+        return "image/" + encodeURIComponent(charName.replace(" : ", "_")) + ".webp";
+      }
+      function deckImgsHtml(squad) {
+        if (!squad || !squad.length) return "";
+        const sorted = [...squad].sort((a, b) => a.slot - b.slot);
+        return '<div class="rh-deck-imgs">' +
+          sorted.map(c =>
+            '<img src="' + charImgPath(c.name) + '" title="' + c.name +
+            '" onerror="this.style.display=\'none\'">'
+          ).join("") +
+          '</div>';
+      }
+      // ── 토글 컨트롤 ──────────────────────────────────────────────
+      const raidControls = document.createElement("div");
+      raidControls.className = "rh-controls";
+      raidControls.innerHTML =
+        '<label class="rh-toggle-wrap">' +
+          '<input type="checkbox" id="rhCompactToggle" checked>' +
+          '<span class="rh-toggle-track"><span class="rh-toggle-thumb"></span></span>' +
+          '<span class="rh-toggle-text">간략히</span>' +
+        '</label>' +
+        '<label class="rh-toggle-wrap">' +
+          '<input type="checkbox" id="rhDeckToggle">' +
+          '<span class="rh-toggle-track"><span class="rh-toggle-thumb"></span></span>' +
+          '<span class="rh-toggle-text">덱 보기</span>' +
+        '</label>';
+      raidSection.appendChild(raidControls);
+
+      // 토글 참조 (DOM 삽입 전이므로 querySelectorAll 사용)
+      const rhInputs     = raidControls.querySelectorAll("input[type='checkbox']");
+      const detailToggle = rhInputs[0];
+      const deckToggle   = rhInputs[1];
+
+      // ── 상세 테이블 ──────────────────────────────────────────────
+      const elemMap   = { "Z.E.U.S.":"철갑","H.S.T.A.":"수냉","D.M.T.R.":"풍압","A.N.M.I.":"작열","A.N.M.I":"작열","P.S.I.D.":"전격" };
+      const elemColors = { "수냉":"#3b82f6","전격":"#a855f7","풍압":"#22c55e","작열":"#ef4444","철갑":"#f59e0b" };
+
       const table = document.createElement("table");
       table.className = "raid-hist-table";
 
+      const colgroup = document.createElement("colgroup");
+      colgroup.innerHTML = '<col style="width:200px"><col style="width:42px"><col>';
+      table.appendChild(colgroup);
+
       const thead = document.createElement("thead");
-      thead.innerHTML = '<tr>' +
-        '<th style="text-align:left">보스</th><th>Lv</th><th>대미지</th>' +
-        '</tr>';
+      thead.innerHTML = '<tr><th style="text-align:left">보스</th><th>Lv</th><th>대미지</th></tr>';
       table.appendChild(thead);
 
-      const tbody = document.createElement("tbody");
+      function fmtFull(num) {
+        if (!num) return "—";
+        return num.toLocaleString("ko-KR");
+      }
 
-      [...raidHistory].reverse().forEach(({ season, total, rank, memberCount, raids }) => {
-        // 시즌 구분 행
-        const secTr = document.createElement("tr");
-        secTr.className = "rh-section-row";
-        secTr.innerHTML =
-          '<td colspan="3">' + season +
-            ' — 총 <span style="color:var(--blue)">' + fmtDmg(total) + '</span>' +
-            ' &nbsp;<span style="color:var(--text-dim);font-weight:500;">(' + rank + '위 / ' + memberCount + '명)</span>' +
-          '</td>';
-        tbody.appendChild(secTr);
+      function buildTbody() {
+        const compact  = detailToggle.checked;
+        const showDeck = deckToggle.checked;
+        const fmt      = compact ? fmtDmg : fmtFull;
+        const newTbody = document.createElement("tbody");
 
-        // 보스별 행 (step 순)
-        const sortedRaids = [...raids].sort((a, b) => a.step - b.step);
-        sortedRaids.forEach(r => {
-          const tr = document.createElement("tr");
-          const shortBoss = r.bossName.replace(/\s*\[.*?\]$/, "").trim();
-          const elemMatch = r.bossName.match(/\[([^\]]+)\]$/);
-          const elemMap = { "Z.E.U.S.":"철갑","H.S.T.A.":"수냉","D.M.T.R.":"풍압","A.N.M.I.":"작열","A.N.M.I":"작열","P.S.I.D.":"전격" };
-          const elem = elemMatch ? (elemMap[elemMatch[1]] || "") : "";
-          const elemColors = { "수냉":"#3b82f6","전격":"#a855f7","풍압":"#22c55e","작열":"#ef4444","철갑":"#f59e0b" };
-          const elemStyle = elem ? ' <span style="font-size:10px;color:' + (elemColors[elem]||"#94a3b8") + '">[' + elem + ']</span>' : "";
-          const dmgStyle = r.isFinalHit
-            ? 'font-weight:700;color:var(--red);font-variant-numeric:tabular-nums'
-            : 'font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums';
+        [...raidHistory].reverse().forEach(({ season, total, rank, memberCount, raids }) => {
+          const secTr = document.createElement("tr");
+          secTr.className = "rh-section-row";
+          secTr.innerHTML =
+            '<td colspan="3">' + season +
+              ' — 총 <span style="color:var(--blue)">' + fmtDmg(total) + '</span>' +
+              ' &nbsp;<span style="color:var(--text-dim);font-weight:500;">(' + rank + '위 / ' + memberCount + '명)</span>' +
+            '</td>';
+          newTbody.appendChild(secTr);
 
-          tr.innerHTML =
-            '<td class="rh-boss">' + shortBoss + elemStyle + '</td>' +
-            '<td>Lv.' + r.bossLevel + '</td>' +
-            '<td style="' + dmgStyle + '">' + fmtDmg(r.totalDamage) + '</td>';
-          tbody.appendChild(tr);
+          [...raids].sort((a, b) => a.step - b.step).forEach(r => {
+            const tr = document.createElement("tr");
+            const shortBoss = r.bossName.replace(/\s*\[.*?\]$/, "").trim();
+            const elemMatch = r.bossName.match(/\[([^\]]+)\]$/);
+            const elem      = elemMatch ? (elemMap[elemMatch[1]] || "") : "";
+            const elemStyle = elem ? ' <span style="font-size:10px;color:' + (elemColors[elem]||"#94a3b8") + '">[' + elem + ']</span>' : "";
+            const dmgStyle  = r.isFinalHit
+              ? 'font-weight:700;color:var(--red);font-variant-numeric:tabular-nums'
+              : 'font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums';
+
+            const dmgCell = '<td style="' + dmgStyle + '">' + fmt(r.totalDamage) +
+              (showDeck ? deckImgsHtml(r.squad) : "") + '</td>';
+
+            tr.innerHTML =
+              '<td class="rh-boss">' + shortBoss + elemStyle + '</td>' +
+              '<td>Lv.' + r.bossLevel + '</td>' +
+              dmgCell;
+            newTbody.appendChild(tr);
+          });
         });
+        return newTbody;
+      }
+
+      let tbody = buildTbody();
+      table.appendChild(tbody);
+
+      raidControls.addEventListener("change", function() {
+        const newTbody = buildTbody();
+        table.replaceChild(newTbody, tbody);
+        tbody = newTbody;
       });
 
-      table.appendChild(tbody);
       raidSection.appendChild(table);
     }
     modalBody.appendChild(raidSection);

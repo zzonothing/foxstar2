@@ -52,6 +52,44 @@
     }
     .shift-controls select:focus { border-color: var(--blue); }
 
+    /* ── 캐릭터 검색 콤보박스 ──────────────────────────────────── */
+    .char-combo { position: relative; }
+    .char-combo-input {
+      height: 30px; padding: 0 8px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: var(--bg-card); color: var(--text);
+      font-size: 13px; font-family: inherit;
+      outline: none; box-sizing: border-box;
+      width: 160px; cursor: text;
+    }
+    .char-combo-input:focus { border-color: var(--blue); }
+    .char-dropdown {
+      display: none;
+      position: absolute; top: calc(100% + 3px); left: 0;
+      min-width: 200px; max-height: 260px; overflow-y: auto;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: 500;
+    }
+    .char-dropdown.open { display: block; }
+    .char-dropdown-item {
+      padding: 7px 12px; font-size: 13px; color: var(--text);
+      cursor: pointer; white-space: nowrap;
+    }
+    .char-dropdown-item:hover,
+    .char-dropdown-item.active { background: var(--bg-muted); }
+    .char-dropdown-item.selected { color: var(--blue); font-weight: 600; }
+    .char-dropdown-sep {
+      padding: 4px 12px; font-size: 10px; font-weight: 700;
+      letter-spacing: .05em; color: var(--text-dim);
+      background: var(--bg-muted); pointer-events: none;
+      border-top: 1px solid var(--border);
+    }
+    .char-dropdown-empty {
+      padding: 10px 12px; font-size: 12px; color: var(--text-dim);
+      text-align: center;
+    }
+
     @media (max-width: 600px) {
       .shift-controls {
         flex-direction: column;
@@ -75,6 +113,8 @@
         height: 34px;
         font-size: 12px;
       }
+      .char-combo { width: 100%; }
+      .char-combo-input { width: 100%; font-size: 12px; height: 34px; }
     }
 
     /* ── 옵션 체크박스 필터 ─────────────────────────────────── */
@@ -350,7 +390,10 @@
         </label>
         <label>
           <span>캐릭터</span>
-          <select id="charSelect"></select>
+          <div class="char-combo" id="charComboWrap">
+            <input type="text" id="charInput" class="char-combo-input" placeholder="전체" autocomplete="off">
+            <div class="char-dropdown" id="charDropdown"></div>
+          </div>
         </label>
         <label>
           <span>멤버</span>
@@ -566,7 +609,6 @@ seasonKeys.forEach(k => {
 seasonSelect.value = seasonKeys[seasonKeys.length - 1];
 
 // ─── 캐릭터 / 멤버 셀렉터 ────────────────────────────────────────
-const charSelect   = document.getElementById("charSelect");
 const memberSelect = document.getElementById("memberSelect");
 
 // S39 기준 우선순위 캐릭터 목록
@@ -581,75 +623,126 @@ const PRIORITY_CHARS = new Set([
   "프리바티", "헬름", "헬름 : 아쿠아마린", "홍련 : 흑영",
 ]);
 
+// ─── 캐릭터 검색 콤보박스 ────────────────────────────────────────
+const charInput    = document.getElementById("charInput");
+const charDropdown = document.getElementById("charDropdown");
+let charAllOptions = []; // { value, label, group }
+let charFilterValue = "";
+
+function elemNameSort(a, b) {
+  const ei = ELEMENT_ORDER.indexOf(a[1]);
+  const ej = ELEMENT_ORDER.indexOf(b[1]);
+  const diff = (ei === -1 ? 99 : ei) - (ej === -1 ? 99 : ej);
+  return diff !== 0 ? diff : a[0].localeCompare(b[0], "ko");
+}
+
 function buildCharSelect(season) {
   const data = UNION[season];
-  charSelect.innerHTML = "";
+  charAllOptions = [];
 
-  const allOpt = document.createElement("option");
-  allOpt.value       = "";
-  allOpt.textContent = "전체";
-  charSelect.appendChild(allOpt);
-
-  if (!data) return;
-
-  // 캐릭터 name + element 수집 (중복 제거)
-  const seen = new Map();
-  data.members.forEach(member => {
-    (member.characters || []).forEach(ch => {
-      if (!seen.has(ch.name)) seen.set(ch.name, ch.element || "");
+  if (data) {
+    const seen = new Map();
+    data.members.forEach(member => {
+      (member.characters || []).forEach(ch => {
+        if (!seen.has(ch.name)) seen.set(ch.name, ch.element || "");
+      });
     });
-  });
 
-  // element 순 → 이름 순 정렬 함수
-  function elemNameSort(a, b) {
-    const ei = ELEMENT_ORDER.indexOf(a[1]);
-    const ej = ELEMENT_ORDER.indexOf(b[1]);
-    const diff = (ei === -1 ? 99 : ei) - (ej === -1 ? 99 : ej);
-    return diff !== 0 ? diff : a[0].localeCompare(b[0], "ko");
+    const priority = [...seen.entries()].filter(([name]) =>  PRIORITY_CHARS.has(name)).sort(elemNameSort);
+    const rest     = [...seen.entries()].filter(([name]) => !PRIORITY_CHARS.has(name)).sort(elemNameSort);
+
+    if (priority.length > 0 && rest.length > 0) {
+      priority.forEach(([name, element]) => {
+        charAllOptions.push({ value: name, label: (ELEMENT_EMOJI[element] || "⚪") + " " + name, group: "주요" });
+      });
+      rest.forEach(([name, element]) => {
+        charAllOptions.push({ value: name, label: (ELEMENT_EMOJI[element] || "⚪") + " " + name, group: "기타" });
+      });
+    } else {
+      [...priority, ...rest].forEach(([name, element]) => {
+        charAllOptions.push({ value: name, label: (ELEMENT_EMOJI[element] || "⚪") + " " + name, group: null });
+      });
+    }
   }
 
-  const priority = [...seen.entries()].filter(([name]) =>  PRIORITY_CHARS.has(name)).sort(elemNameSort);
-  const rest     = [...seen.entries()].filter(([name]) => !PRIORITY_CHARS.has(name)).sort(elemNameSort);
-
-  // 우선순위 그룹 구분선
-  if (priority.length > 0 && rest.length > 0) {
-    const sep = document.createElement("option");
-    sep.disabled     = true;
-    sep.textContent  = "── 주요 캐릭터 ──";
-    sep.style.color  = "var(--text-sub)";
-    charSelect.appendChild(sep);
-
-    priority.forEach(([name, element]) => {
-      const emoji = ELEMENT_EMOJI[element] || "⚪";
-      const opt   = document.createElement("option");
-      opt.value       = name;
-      opt.textContent = emoji + " " + name;
-      charSelect.appendChild(opt);
-    });
-
-    const sep2 = document.createElement("option");
-    sep2.disabled    = true;
-    sep2.textContent = "── 기타 캐릭터 ──";
-    sep2.style.color = "var(--text-sub)";
-    charSelect.appendChild(sep2);
-
-    rest.forEach(([name, element]) => {
-      const emoji = ELEMENT_EMOJI[element] || "⚪";
-      const opt   = document.createElement("option");
-      opt.value       = name;
-      opt.textContent = emoji + " " + name;
-      charSelect.appendChild(opt);
-    });
-  } else {
-    [...priority, ...rest].forEach(([name, element]) => {
-      const emoji = ELEMENT_EMOJI[element] || "⚪";
-      const opt   = document.createElement("option");
-      opt.value       = name;
-      opt.textContent = emoji + " " + name;
-      charSelect.appendChild(opt);
-    });
-  }
+  // 선택 초기화
+  charFilterValue = "";
+  charInput.value = "";
+  renderCharDropdown("");
 }
+
+function renderCharDropdown(query) {
+  const q = query.trim().toLowerCase();
+  charDropdown.innerHTML = "";
+
+  // 전체 항목
+  const allEl = document.createElement("div");
+  allEl.className = "char-dropdown-item" + (charFilterValue === "" ? " selected" : "");
+  allEl.textContent = "전체";
+  allEl.dataset.value = "";
+  charDropdown.appendChild(allEl);
+
+  const filtered = q
+    ? charAllOptions.filter(o => o.value.toLowerCase().includes(q))
+    : charAllOptions;
+
+  if (filtered.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "char-dropdown-empty";
+    empty.textContent = "검색 결과 없음";
+    charDropdown.appendChild(empty);
+    return;
+  }
+
+  // 그룹 구분선 삽입 (검색 중엔 생략)
+  let lastGroup = null;
+  filtered.forEach(o => {
+    if (!q && o.group && o.group !== lastGroup) {
+      const sep = document.createElement("div");
+      sep.className = "char-dropdown-sep";
+      sep.textContent = o.group === "주요" ? "── 주요 캐릭터" : "── 기타 캐릭터";
+      charDropdown.appendChild(sep);
+      lastGroup = o.group;
+    }
+    const item = document.createElement("div");
+    item.className = "char-dropdown-item" + (charFilterValue === o.value ? " selected" : "");
+    item.textContent = o.label;
+    item.dataset.value = o.value;
+    charDropdown.appendChild(item);
+  });
+}
+
+// 드롭다운 열기/닫기
+charInput.addEventListener("focus", () => {
+  renderCharDropdown(charInput.value);
+  charDropdown.classList.add("open");
+});
+charInput.addEventListener("input", () => {
+  renderCharDropdown(charInput.value);
+  charDropdown.classList.add("open");
+});
+charDropdown.addEventListener("mousedown", e => {
+  const item = e.target.closest(".char-dropdown-item");
+  if (!item) return;
+  e.preventDefault(); // blur 방지
+  charFilterValue = item.dataset.value;
+  charInput.value = charFilterValue === "" ? "" : charAllOptions.find(o => o.value === charFilterValue)?.label || charFilterValue;
+  charDropdown.classList.remove("open");
+  renderTable();
+});
+charInput.addEventListener("blur", () => {
+  // 선택된 값이 있으면 label 복원, 없으면 비움
+  if (charFilterValue) {
+    const opt = charAllOptions.find(o => o.value === charFilterValue);
+    charInput.value = opt ? opt.label : charFilterValue;
+  } else {
+    charInput.value = "";
+  }
+  charDropdown.classList.remove("open");
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") charDropdown.classList.remove("open");
+});
 
 function buildMemberSelect(season) {
   const data = UNION[season];
@@ -831,7 +924,7 @@ document.addEventListener("keydown", function(e) {
 // ─── 테이블 렌더링 ───────────────────────────────────────────────
 function renderTable() {
   const season       = Number(seasonSelect.value);
-  const filterChar   = charSelect.value;
+  const filterChar   = charFilterValue;
   const filterMember = memberSelect.value;
   const data         = UNION[season];
   const tbody        = document.getElementById("shiftTableBody");
@@ -949,7 +1042,6 @@ seasonSelect.addEventListener("change", () => {
   buildMemberSelect(Number(seasonSelect.value));
   renderTable();
 });
-charSelect.addEventListener("change", renderTable);
 memberSelect.addEventListener("change", renderTable);
 document.getElementById("sortSelect").addEventListener("change", renderTable);
 ["optUko","optAtk","optSum","optAmmo","optCharge","optCritDmg"].forEach(id => {

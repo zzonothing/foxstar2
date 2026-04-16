@@ -60,7 +60,7 @@
       }
       .shift-controls label {
         display: grid;
-        grid-template-columns: 52px 1fr;
+        grid-template-columns: 60px 1fr;
         align-items: center;
         gap: 8px;
         font-size: 12px;
@@ -75,6 +75,51 @@
         height: 34px;
         font-size: 12px;
       }
+    }
+
+    /* ── 옵션 체크박스 필터 ─────────────────────────────────── */
+    .shift-options {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: var(--bg-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .shift-options-label {
+      font-weight: 700;
+      color: var(--text-sub);
+      white-space: nowrap;
+      margin-right: 2px;
+    }
+    .shift-options-checks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      align-items: center;
+    }
+    .opt-check {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      user-select: none;
+      color: var(--text);
+      white-space: nowrap;
+    }
+    .opt-check input[type="checkbox"] {
+      width: 14px; height: 14px;
+      accent-color: var(--blue);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    @media (max-width: 600px) {
+      .shift-options { gap: 6px 10px; padding: 8px 10px; }
+      .shift-options-checks { gap: 6px 10px; }
     }
 
     /* ── 테이블 ────────────────────────────────────────────── */
@@ -113,6 +158,27 @@
     .td-num      { color: var(--text-sub); font-size: 12px; }
     .td-name     { font-weight: 700; }
     .td-char     { font-weight: 600; }
+    .btn-detail {
+      margin-left: auto;
+      flex-shrink: 0;
+      padding: 2px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-muted);
+      color: var(--text-sub);
+      font-size: 11px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      line-height: 1.4;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      white-space: nowrap;
+    }
+    .btn-detail:hover {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+    }
     .td-uko      { font-weight: 700; color: var(--blue); }
     .td-atk      { font-weight: 600; }
     .td-skill    { font-weight: 600; }
@@ -126,6 +192,8 @@
       border-radius: 999px;
       font-size: 11px;
       font-weight: 700;
+      line-height: 1;
+      vertical-align: middle;
       background: var(--amber-light);
       color: var(--amber);
       border: 1px solid #fde68a;
@@ -136,6 +204,8 @@
       border-radius: 999px;
       font-size: 11px;
       font-weight: 600;
+      line-height: 1;
+      vertical-align: middle;
       background: var(--bg-muted);
       color: var(--text-sub);
       border: 1px solid var(--border);
@@ -146,8 +216,7 @@
     .item-sr  { color: #a855f7;       font-weight: 700; }
     .item-r   { color: var(--blue);   font-weight: 700; }
 
-    /* 클릭 가능한 행 */
-    .shift-table tbody tr { cursor: pointer; }
+    .shift-table tbody tr { cursor: default; }
 
     /* ── 장비 상세 모달 ─────────────────────────────────────── */
     .equip-overlay {
@@ -287,6 +356,45 @@
           <span>멤버</span>
           <select id="memberSelect"></select>
         </label>
+        <label>
+          <span>정렬</span>
+          <select id="sortSelect">
+            <option value="uko">우코</option>
+            <option value="atk">공증</option>
+            <option value="sum">우코+공증</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- 옵션 체크박스 -->
+      <div class="shift-options">
+        <span class="shift-options-label">옵션:</span>
+        <div class="shift-options-checks">
+          <label class="opt-check">
+            <input type="checkbox" id="optUko" checked>
+            <span>우코</span>
+          </label>
+          <label class="opt-check">
+            <input type="checkbox" id="optAtk" checked>
+            <span>공증</span>
+          </label>
+          <label class="opt-check">
+            <input type="checkbox" id="optSum" checked>
+            <span>우코+공증</span>
+          </label>
+          <label class="opt-check">
+            <input type="checkbox" id="optAmmo">
+            <span>장탄</span>
+          </label>
+          <label class="opt-check">
+            <input type="checkbox" id="optCharge">
+            <span>차속</span>
+          </label>
+          <label class="opt-check">
+            <input type="checkbox" id="optCritDmg">
+            <span>크댐</span>
+          </label>
+        </div>
       </div>
 
       <!-- 테이블 -->
@@ -300,8 +408,12 @@
               <th>싱크로레벨</th>
               <th>캐릭터</th>
               <th>돌파</th>
-              <th>우코 ▼</th>
-              <th>공증</th>
+              <th id="thUko">우코</th>
+              <th id="thAtk">공증</th>
+              <th id="thSum">우코+공증</th>
+              <th id="thAmmo">장탄</th>
+              <th id="thCharge">차속</th>
+              <th id="thCritDmg">크댐</th>
               <th>소장품</th>
               <th>스킬1</th>
               <th>스킬2</th>
@@ -737,14 +849,54 @@ function renderTable() {
     });
   });
 
-  // 우코 내림차순 → 공증 내림차순 → 캐릭터명 가나다순
+  // 정렬 기준
+  const sortKey = document.getElementById("sortSelect").value;
+  function sortVal(ch) {
+    const uko = ch.increaseElementDamage || 0;
+    const atk = ch.increaseAtk || 0;
+    if (sortKey === "atk") return atk;
+    if (sortKey === "sum") return uko + atk;
+    return uko; // default: uko
+  }
   rows.sort((a, b) => {
-    const ukoDiff = (b.ch.increaseElementDamage || 0) - (a.ch.increaseElementDamage || 0);
-    if (ukoDiff !== 0) return ukoDiff;
-    const atkDiff = (b.ch.increaseAtk || 0) - (a.ch.increaseAtk || 0);
-    if (atkDiff !== 0) return atkDiff;
+    const diff = sortVal(b.ch) - sortVal(a.ch);
+    if (diff !== 0) return diff;
     return a.ch.name.localeCompare(b.ch.name, "ko");
   });
+
+  // ── 옵션 체크박스 상태 ──────────────────────────────────────────
+  const showUko     = document.getElementById("optUko").checked;
+  const showAtk     = document.getElementById("optAtk").checked;
+  const showSum     = document.getElementById("optSum").checked;
+  const showAmmo    = document.getElementById("optAmmo").checked;
+  const showCharge  = document.getElementById("optCharge").checked;
+  const showCritDmg = document.getElementById("optCritDmg").checked;
+
+  // 컬럼 헤더 show/hide
+  const colToggle = [
+    { id: "thUko",     show: showUko     },
+    { id: "thAtk",     show: showAtk     },
+    { id: "thSum",     show: showSum     },
+    { id: "thAmmo",    show: showAmmo    },
+    { id: "thCharge",  show: showCharge  },
+    { id: "thCritDmg", show: showCritDmg },
+  ];
+  colToggle.forEach(({ id, show }) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = show ? "" : "none";
+  });
+
+  // 헤더 정렬 화살표 표시
+  ["thUko", "thAtk", "thSum"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = el.textContent.replace(" ▼", "");
+  });
+  const arrowMap = { uko: "thUko", atk: "thAtk", sum: "thSum" };
+  const activeThId = arrowMap[sortKey];
+  if (activeThId) {
+    const th = document.getElementById(activeThId);
+    if (th) th.textContent += " ▼";
+  }
 
   const MAX_ROWS = 200;
   const totalRows = rows.length;
@@ -758,19 +910,35 @@ function renderTable() {
 
   displayRows.forEach(({ member, ch }, i) => {
     const tr = document.createElement("tr");
-    tr.addEventListener("click", () => openEquipModal(member, ch));
     tr.innerHTML =
       '<td class="td-num">' + (i + 1) + '</td>' +
       '<td class="td-name">' + member.name + '</td>' +
       '<td>' + member.syncroLevel + '</td>' +
-      '<td class="td-char" style="display:flex;align-items:center;justify-content:flex-start">' + elementDot(ch.element) + ch.name + '</td>' +
+      '<td class="td-char" style="display:flex;align-items:center;justify-content:flex-start;gap:6px;">' +
+        elementDot(ch.element) + ch.name +
+        '<button class="btn-detail">자세히</button>' +
+      '</td>' +
       '<td>' + upgradeBadge(ch.upgrade) + '</td>' +
-      '<td class="td-uko">' + (ch.increaseElementDamage != null ? ch.increaseElementDamage.toFixed(2) + "%" : "—") + '</td>' +
-      '<td class="td-atk">' + (ch.increaseAtk != null ? ch.increaseAtk.toFixed(2) + "%" : "—") + '</td>' +
+      (showUko    ? '<td class="td-uko">'  + (ch.increaseElementDamage            != null ? ch.increaseElementDamage.toFixed(2)            + "%" : "—") + '</td>' : '') +
+      (showAtk    ? '<td class="td-atk">'  + (ch.increaseAtk                      != null ? ch.increaseAtk.toFixed(2)                      + "%" : "—") + '</td>' : '') +
+      (function() {
+        if (!showSum) return '';
+        const uko = ch.increaseElementDamage || 0;
+        const atk = ch.increaseAtk || 0;
+        const sum = uko + atk;
+        return '<td class="td-uko">' + (uko || atk ? sum.toFixed(2) + "%" : "—") + '</td>';
+      })() +
+      (showAmmo   ? '<td class="td-atk">'  + (ch.increaseMaxAmmunitionCapacity    != null ? ch.increaseMaxAmmunitionCapacity.toFixed(2)    + "%" : "—") + '</td>' : '') +
+      (showCharge  ? '<td class="td-atk">'  + (ch.increaseChargeSpeed              != null ? ch.increaseChargeSpeed.toFixed(2)              + "%" : "—") + '</td>' : '') +
+      (showCritDmg ? '<td class="td-atk">'  + (ch.increaseCriticalDamage           != null ? ch.increaseCriticalDamage.toFixed(2)           + "%" : "—") + '</td>' : '') +
       '<td>' + itemHtml(ch.itemGrade, ch.itemLevel) + '</td>' +
       '<td class="td-skill">' + skillHtml(ch.skill1) + '</td>' +
       '<td class="td-skill">' + skillHtml(ch.skill2) + '</td>' +
       '<td class="td-skill">' + skillHtml(ch.skill3) + '</td>';
+    tr.querySelector(".btn-detail").addEventListener("click", function(e) {
+      e.stopPropagation();
+      openEquipModal(member, ch);
+    });
     tbody.appendChild(tr);
   });
 }
@@ -783,6 +951,10 @@ seasonSelect.addEventListener("change", () => {
 });
 charSelect.addEventListener("change", renderTable);
 memberSelect.addEventListener("change", renderTable);
+document.getElementById("sortSelect").addEventListener("change", renderTable);
+["optUko","optAtk","optSum","optAmmo","optCharge","optCritDmg"].forEach(id => {
+  document.getElementById(id).addEventListener("change", renderTable);
+});
 
 buildCharSelect(Number(seasonSelect.value));
 buildMemberSelect(Number(seasonSelect.value));

@@ -200,7 +200,9 @@ function statCell(val, key) {
 
 function outpostCell(op, key) {
   const v = (op && op[key] != null) ? op[key] : "—";
-  return '<td class="col-outpost center" style="font-size:12px;color:var(--text-sub)">' + v + '</td>';
+  const isMax = key !== "common" && op && op[key] != null && op.common != null && op[key] === op.common;
+  const color = isMax ? "color:var(--red);font-weight:700" : "color:var(--text-sub)";
+  return '<td class="col-outpost center" style="font-size:12px;' + color + '">' + v + '</td>';
 }
 
 // ─── 평균 상승 계산 (최신 시즌 제외 후 최근 5개 시즌 기준) ──────

@@ -300,6 +300,34 @@
       padding: 2px 6px; border-radius: 6px;
     }
     .equip-close:hover { background: var(--bg-muted); color: var(--text); }
+    .equip-totals {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-muted);
+    }
+    .equip-total-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+    }
+    .equip-total-name { color: var(--text); }
+    .equip-total-val  { font-weight: 700; color: var(--text); }
+    .equip-total-item.total-max {
+      background: #111827;
+      border-color: #111827;
+    }
+    .equip-total-item.total-max .equip-total-name { color: #ffffff; }
+    .equip-total-item.total-max .equip-total-val  { color: rgb(80,180,255); }
+    .equip-total-item.total-blue .equip-total-val { color: rgb(80,180,255); }
+
     .equip-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -488,6 +516,7 @@
       </div>
       <button class="equip-close" id="equipClose">✕</button>
     </div>
+    <div class="equip-totals" id="equipTotals"></div>
     <div class="equip-grid" id="equipGrid"></div>
   </div>
 </div>
@@ -927,6 +956,43 @@ function openEquipModal(member, ch) {
 
   charEl.innerHTML = elementDot(ch.element) + (ch.name + (ch.subName ? " · " + ch.subName : ""));
   metaEl.textContent = member.name + "  ·  " + (ch.upgrade || "—") + "  ·  " + (ch.element || "—");
+
+  // ── 총합 옵션 수치 계산 ──────────────────────────────────────
+  const EFFECT_ORDER = [
+    "increaseElementDamage", "increaseAtk", "increaseMaxAmmunitionCapacity",
+    "increaseCriticalDamage", "increaseCriticalRate",
+    "increaseChargeSpeed", "increaseChargeDamage",
+    "increaseDef", "increaseHitRate"
+  ];
+  const totalsMap = {};
+  const tierMap   = {}; // effect → 최고 tier ("max" > "blue" > "default")
+  EQUIP_PART_LABELS.forEach(p => {
+    buildPartSlots(ch, p).forEach(function({ effect, val }) {
+      if (!effect || val == null || val === 0) return;
+      totalsMap[effect] = (totalsMap[effect] || 0) + parseFloat(val);
+      const t = valueTier(effect, val);
+      const cur = tierMap[effect] || "default";
+      if (t === "max" || (t === "blue" && cur !== "max")) tierMap[effect] = t;
+    });
+  });
+
+  const totalsEl = document.getElementById("equipTotals");
+  totalsEl.innerHTML = "";
+  Object.entries(totalsMap)
+    .sort(function(a, b) {
+      const ia = EFFECT_ORDER.indexOf(a[0]), ib = EFFECT_ORDER.indexOf(b[0]);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    })
+    .forEach(function([effect, sum]) {
+      const tier = tierMap[effect] || "default";
+      const item = document.createElement("div");
+      item.className = "equip-total-item" +
+        (tier === "max" ? " total-max" : tier === "blue" ? " total-blue" : "");
+      item.innerHTML =
+        '<span class="equip-total-name">' + (EFFECT_LABEL[effect] || effect) + '</span>' +
+        '<span class="equip-total-val">' + sum.toFixed(2) + '%</span>';
+      totalsEl.appendChild(item);
+    });
 
   grid.innerHTML = "";
   EQUIP_PART_LABELS.forEach(p => {

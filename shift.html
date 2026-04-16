@@ -628,6 +628,7 @@ const charInput    = document.getElementById("charInput");
 const charDropdown = document.getElementById("charDropdown");
 let charAllOptions = []; // { value, label, group }
 let charFilterValue = "";
+let charActiveIdx   = -1;
 
 function elemNameSort(a, b) {
   const ei = ELEMENT_ORDER.indexOf(a[1]);
@@ -671,9 +672,23 @@ function buildCharSelect() {
   renderCharDropdown("");
 }
 
+function getDropdownItems() {
+  return [...charDropdown.querySelectorAll(".char-dropdown-item")];
+}
+
+function setDropdownActive(idx) {
+  const items = getDropdownItems();
+  items.forEach(function(el, i) {
+    el.classList.toggle("active", i === idx);
+    if (i === idx) el.scrollIntoView({ block: "nearest" });
+  });
+  charActiveIdx = idx;
+}
+
 function renderCharDropdown(query) {
   const q = query.trim().toLowerCase();
   charDropdown.innerHTML = "";
+  charActiveIdx = -1;
 
   // 전체 항목
   const allEl = document.createElement("div");
@@ -731,7 +746,6 @@ charDropdown.addEventListener("mousedown", e => {
   renderTable();
 });
 charInput.addEventListener("blur", () => {
-  // 선택된 값이 있으면 label 복원, 없으면 비움
   if (charFilterValue) {
     const opt = charAllOptions.find(o => o.value === charFilterValue);
     charInput.value = opt ? opt.label : charFilterValue;
@@ -739,9 +753,47 @@ charInput.addEventListener("blur", () => {
     charInput.value = "";
   }
   charDropdown.classList.remove("open");
+  charActiveIdx = -1;
 });
+
+charInput.addEventListener("keydown", function(e) {
+  const isOpen = charDropdown.classList.contains("open");
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    if (!isOpen) {
+      renderCharDropdown(charInput.value);
+      charDropdown.classList.add("open");
+      setDropdownActive(0);
+    } else {
+      const items = getDropdownItems();
+      setDropdownActive(Math.min(charActiveIdx + 1, items.length - 1));
+    }
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    if (isOpen) {
+      setDropdownActive(Math.max(charActiveIdx - 1, 0));
+    }
+  } else if (e.key === "Enter") {
+    e.preventDefault();
+    if (isOpen && charActiveIdx >= 0) {
+      const items = getDropdownItems();
+      const item  = items[charActiveIdx];
+      if (item) {
+        charFilterValue = item.dataset.value;
+        charInput.value = charFilterValue === ""
+          ? ""
+          : (charAllOptions.find(o => o.value === charFilterValue)?.label || charFilterValue);
+        charDropdown.classList.remove("open");
+        charActiveIdx = -1;
+        renderTable();
+      }
+    }
+  }
+});
+
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape") charDropdown.classList.remove("open");
+  if (e.key === "Escape") { charDropdown.classList.remove("open"); charActiveIdx = -1; }
 });
 
 function buildMemberSelect() {

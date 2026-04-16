@@ -643,22 +643,10 @@ renderRankTable("itemTbody", itemRanked, "name", "count", null, cntFmt);
     if (e.ctrlKey && e.shiftKey && ["I","i","J","j","C","c"].includes(e.key)) { e.preventDefault(); return; }
     if (e.ctrlKey && ["u","U","s","S"].includes(e.key)) { e.preventDefault(); return; }
   });
-  var devOpen = false;
-  function checkDevTools(){
-    var threshold = 160;
-    var widthDiff  = window.outerWidth  - window.innerWidth  > threshold;
-    var heightDiff = window.outerHeight - window.innerHeight > threshold;
-    if (widthDiff || heightDiff) {
-      if (!devOpen) {
-        devOpen = true;
-        document.body.innerHTML = "";
-        document.title = "";
-      }
-    } else {
-      devOpen = false;
-    }
-  }
-  setInterval(checkDevTools, 1000);
+  // DevTools 열림 감지(폐기): outerWidth/innerWidth 차이로 추정하던 폴링이
+  // iOS 줌(innerWidth 변동) / 스크롤 시 URL 바 숨김(innerHeight 변동) 에서
+  // 오탐을 일으켜 document.body.innerHTML="" 로 페이지 통째 블랭크 발생.
+  // 키보드 단축키 차단만 유지.
 })();
 </script>
 

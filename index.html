@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script>if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark");</script>
-  <style>html{background:#eef1f6}html.dark{background:#111827}</style>
+  <style>html{background:#eef1f6}html.dark{background:#111827}body:not(.ready){visibility:hidden}</style>
   <link rel="stylesheet" href="css/style.css" />
   <script type="speculationrules">{"prerender":[{"source":"document","where":{"href_matches":"/*.html"},"eagerness":"moderate"}]}</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -1074,6 +1074,9 @@ flowEl.innerHTML = flowParts.length ? flowParts.join("") : '<span style="color:v
   setInterval(checkDevTools, 1000);
 })();
 </script>
+
+<!-- ═══════════ 인증 확정 후 body 공개 (FOUC 방지) ═══════════ -->
+<script>if(!window.__AUTH_REQUIRED)document.body.classList.add("ready");</script>
 
 </body>
 </html>

@@ -16,7 +16,10 @@
   <script>if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark");</script>
   <style>html{background:#eef1f6}html.dark{background:#111827}body:not(.ready){visibility:hidden}</style>
   <link rel="stylesheet" href="css/style.css" />
-  <script type="speculationrules">{"prerender":[{"source":"document","where":{"href_matches":"/*.html"},"eagerness":"moderate"}]}</script>
+  <script type="speculationrules">{"prerender":[{"source":"document","where":{"href_matches":"/*.html"},"eagerness":"eager"}],"prefetch":[{"source":"document","where":{"href_matches":"/*.html"},"eagerness":"eager"}]}</script>
+  <link rel="prefetch" href="/index.html" />
+  <link rel="prefetch" href="/raid.html" />
+  <link rel="prefetch" href="/stats.html" />
   <style>
     .shift-card {
       background: var(--bg-card);

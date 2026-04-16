@@ -14,9 +14,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script>if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark");</script>
-  <style>html{background:#eef1f6}html.dark{background:#111827}</style>
+  <style>html{background:#eef1f6}html.dark{background:#111827}body:not(.ready){visibility:hidden}</style>
   <link rel="stylesheet" href="css/style.css" />
-  <script type="speculationrules">{"prerender":[{"source":"document","where":{"href_matches":"/*.html"},"eagerness":"moderate"}]}</script>
+  <script type="speculationrules">{"prerender":[{"source":"document","where":{"href_matches":"/*.html"},"eagerness":"eager"}],"prefetch":[{"source":"document","where":{"href_matches":"/*.html"},"eagerness":"eager"}]}</script>
+  <link rel="prefetch" href="/index.html" />
+  <link rel="prefetch" href="/shift.html" />
+  <link rel="prefetch" href="/stats.html" />
   <style>
     .container { max-width: 1320px; }
 
@@ -479,90 +482,16 @@
   </div>
 </main>
 
-<!-- ═══════════ 접근 제한 오버레이 ═══════════ -->
-<div id="authOverlay" style="
-  position:fixed; inset:0; z-index:9999;
-  display:flex; align-items:flex-start; justify-content:center;
-  background:var(--bg); padding:60px 24px 24px;
-  overflow-y:auto; -webkit-overflow-scrolling:touch;
-"></div>
-
 <!-- ═══════════ 데이터 로드 ═══════════ -->
 <script src="data/config.js"></script>
 <script src="data/member.js"></script>
 <script src="data/raid.js"></script>
 
-<!-- ═══════════ 인증 스크립트 ═══════════ -->
+<!-- ═══════════ 인증 필요 시 로그인 페이지로 리다이렉트 ═══════════ -->
 <script>
-(function() {
-  const overlay = document.getElementById("authOverlay");
-
-  if (!window.__AUTH_REQUIRED) { overlay.style.display = "none"; return; }
-
-  // 오버레이 내부 렌더
-  overlay.innerHTML =
-    '<div style="' +
-      'background:var(--bg-card);border:1px solid var(--border);border-radius:20px;' +
-      'padding:40px 36px;width:100%;max-width:380px;' +
-      'box-shadow:0 8px 40px rgba(0,0,0,0.18);text-align:center;' +
-    '">' +
-      '<div style="font-size:32px;margin-bottom:8px;">⬡</div>' +
-      '<div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;">' + CONFIG.unionName + '</div>' +
-      '<div style="font-size:13px;color:var(--text-sub);margin-bottom:28px;">접근하려면 비밀번호를 입력하세요</div>' +
-      '<input id="authInput" type="password" placeholder="비밀번호" autocomplete="off" style="' +
-        'width:100%;box-sizing:border-box;height:42px;padding:0 14px;' +
-        'border:1.5px solid var(--border);border-radius:10px;' +
-        'background:var(--bg-muted);color:var(--text);' +
-        'font-size:16px;font-family:inherit;outline:none;' +
-        '-webkit-appearance:none;' +
-        'transition:border-color 0.2s;margin-bottom:10px;' +
-      '">' +
-      '<div id="authError" style="font-size:12px;color:#ef4444;min-height:18px;margin-bottom:10px;"></div>' +
-      '<button id="authBtn" style="' +
-        'width:100%;height:44px;border:none;border-radius:10px;' +
-        'background:var(--blue);color:#fff;' +
-        'font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;' +
-        '-webkit-tap-highlight-color:transparent;touch-action:manipulation;' +
-        'transition:opacity 0.15s;' +
-      '">입장</button>' +
-    '</div>';
-
-  const input = document.getElementById("authInput");
-  const btn   = document.getElementById("authBtn");
-  const err   = document.getElementById("authError");
-
-  input.addEventListener("focus",  function() { this.style.borderColor = "var(--blue)"; });
-  input.addEventListener("blur",   function() { this.style.borderColor = "var(--border)"; });
-  btn.addEventListener("mouseenter", function() { this.style.opacity = "0.85"; });
-  btn.addEventListener("mouseleave", function() { this.style.opacity = "1"; });
-
-  function attempt() {
-    var entered = input.value.trim();
-    if (!entered) return;
-    btn.disabled = true;
-    fetch("/api/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: entered })
-    }).then(function(r) {
-      if (r.ok) {
-        location.reload();
-      } else {
-        err.textContent = "비밀번호가 올바르지 않습니다";
-        input.value = "";
-        input.style.borderColor = "#ef4444";
-        btn.disabled = false;
-        setTimeout(function() {
-          err.textContent = "";
-          input.style.borderColor = "var(--border)";
-        }, 2000);
-      }
-    });
-  }
-
-  btn.addEventListener("click", attempt);
-  input.addEventListener("keydown", function(e) { if (e.key === "Enter") attempt(); });
-})();
+if (window.__AUTH_REQUIRED) {
+  location.replace("/login.html?return=" + encodeURIComponent(location.pathname + location.search));
+}
 </script>
 
 <!-- ═══════════ 레이드 스크립트 ═══════════ -->
@@ -1204,9 +1133,11 @@ function renderDeckUsage(seasonKey) {
   sectionTitle.textContent = "덱 사용 현황";
   container.appendChild(sectionTitle);
 
-  // 보스별 그리드 (보스 수에 맞춰 열 수 고정)
+  // 보스별 그리드 (auto-fit 으로 카드 최소 width 보장 → 좁은 뷰포트에선 줄바꿈)
+  // 보스 수만큼 고정 열을 잡으면 모바일에서 칸이 너무 좁아져 캐릭터 이미지/pill
+  // 이 잘림. minmax(240px,1fr) 로 카드 최소폭 보장하고 공간 부족 시 다음 줄 wrap.
   const grid = document.createElement("div");
-  grid.style.cssText = "display:grid;grid-template-columns:repeat(" + bosses.length + ",1fr);gap:12px;align-items:start;";
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;align-items:start;";
   container.appendChild(grid);
 
   const MEDAL = ["🥇", "🥈", "🥉"];
@@ -1441,24 +1372,15 @@ renderRank(seasonSelect.value);
     if (e.ctrlKey && e.shiftKey && ["I","i","J","j","C","c"].includes(e.key)) { e.preventDefault(); return; }
     if (e.ctrlKey && ["u","U","s","S"].includes(e.key)) { e.preventDefault(); return; }
   });
-  var devOpen = false;
-  function checkDevTools(){
-    var threshold = 160;
-    var widthDiff  = window.outerWidth  - window.innerWidth  > threshold;
-    var heightDiff = window.outerHeight - window.innerHeight > threshold;
-    if (widthDiff || heightDiff) {
-      if (!devOpen) {
-        devOpen = true;
-        document.body.innerHTML = "";
-        document.title = "";
-      }
-    } else {
-      devOpen = false;
-    }
-  }
-  setInterval(checkDevTools, 1000);
+  // DevTools 열림 감지(폐기): outerWidth/innerWidth 차이로 추정하던 폴링이
+  // iOS 줌(innerWidth 변동) / 스크롤 시 URL 바 숨김(innerHeight 변동) 에서
+  // 오탐을 일으켜 document.body.innerHTML="" 로 페이지 통째 블랭크 발생.
+  // 키보드 단축키 차단만 유지.
 })();
 </script>
+
+<!-- ═══════════ 인증 확정 후 body 공개 (FOUC 방지) ═══════════ -->
+<script>if(!window.__AUTH_REQUIRED)document.body.classList.add("ready");</script>
 
 </body>
 </html>

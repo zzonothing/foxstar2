@@ -1,0 +1,82 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+"여우별 유니온 포털" — a password-gated Korean-language fan portal for a union in the mobile game *승리의 여신: 니케* (Goddess of Victory: Nike). Deployed as a static site with serverless functions on Vercel (https://foxstar.vercel.app/).
+
+No build step, no package.json, no tests, no linter. The site is plain HTML/CSS/vanilla JS with two Node.js serverless functions for auth + data gating.
+
+## Commands
+
+- **Local dev** (runs static files + serverless functions together): `vercel dev`
+- **Deploy preview**: `vercel`
+- **Deploy production**: `vercel --prod`
+
+Required environment variables (set in Vercel project settings or `.env.local`):
+- `ACCESS_KEY` — the password users enter at the login overlay
+- `SESSION_SECRET` — HMAC secret for session cookies (falls back to `ACCESS_KEY` if unset)
+- `SESSION_EPOCH` — optional unix-ms timestamp; tokens issued before this are rejected (use to force logout of all sessions after rotating secrets)
+
+## Architecture
+
+### Auth + data-gating model (the non-obvious core)
+
+Sensitive data files (`member.js`, `raid.js`, `character.js`) are **not** static assets. They live in `api/_data/` (underscore prefix keeps Vercel from serving them as static). The flow:
+
+1. HTML pages include them naively: `<script src="data/member.js"></script>`
+2. `vercel.json` rewrites `/data/{member,raid,character}.js` → `/api/data?file=<name>`
+3. `api/data.js` checks the `fstar_session` cookie (HMAC-SHA256 over a timestamp, 1-day expiry, verified with `crypto.timingSafeEqual`).
+   - **Authenticated**: serves the file contents from `api/_data/` with `Cache-Control: private, max-age=3600` and `Content-Type: application/javascript`.
+   - **Unauthenticated**: returns `200 OK` with body `window.__AUTH_REQUIRED=true;` and `Cache-Control: no-store`. Always `200` (not 401) so the `<script>` tag executes and sets the sentinel.
+4. Each HTML page checks `window.__AUTH_REQUIRED`. If set, the page **redirects to `/login.html?return=<current-path>`** via `location.replace()` before the main script runs. The main render path is additionally guarded by `if (!window.__AUTH_REQUIRED) { … }` (closed with a matching `}` near end of file — search for the comment `} // if (!window.__AUTH_REQUIRED)`) as a defensive no-op during the brief moment before navigation completes.
+5. `/login.html` is a standalone minimal page (no header, no sticky/fixed layout, no view-transition, no speculation rules, no html2canvas). It POSTs the password to `/api/auth` (`api/auth.js`), which sets the `fstar_session` cookie on success; the page then `location.replace()`s to the validated `return` path. The `return` parameter is whitelisted to `{/, /index.html, /raid.html, /shift.html, /stats.html}` to prevent open-redirect.
+
+The redirect-to-dedicated-page approach (instead of an in-page overlay) was chosen to work around an iOS 26 Safari bug where `visualViewport.offsetTop` doesn't reset after keyboard dismissal, causing `position: fixed` / `position: sticky` elements (and the whole page layout) to become misaligned during password-input focus. The login page has no fixed/sticky positioning so it bypasses the bug.
+
+Consequences for editing:
+- Never move the sensitive data files out of `api/_data/` — they'd become directly fetchable.
+- The auth guard `if (!window.__AUTH_REQUIRED) { … }` still wraps the entire main script on each HTML page. When editing main-page JS, keep the brace balance intact (the closing `}` is far from the opening; search for the comment `} // if (!window.__AUTH_REQUIRED)` to find it).
+- Keep `/login.html` structurally minimal. Do **not** add a sticky header, view-transition, speculation rules, or `position: fixed` elements — those bring the iOS 26 bug back.
+- When adding a new top-level page, add its path to the `ALLOWED_PATHS` whitelist in `login.html` **and** add a redirect-to-login snippet at the top of its scripts (copy from any existing page).
+- Vercel functions use CommonJS (`module.exports = function handler(req, res) {}`), not ES modules.
+
+### Page layout
+
+Four standalone HTML files share `css/style.css`. There is no bundler and no shared JS file — each page duplicates its own logic inline:
+
+| Page         | Role                         | Loads data files                       |
+|--------------|------------------------------|----------------------------------------|
+| `index.html` | Home / member roster         | `config.js`, `member.js`, `raid.js`    |
+| `raid.html`  | Union raid records           | `config.js`, `member.js`, `raid.js`    |
+| `shift.html` | Shifty-pad (character view)  | `config.js`, `member.js`, `character.js` |
+| `stats.html` | Per-character statistics     | `config.js`, `member.js`, `character.js` |
+
+`data/config.js` is the **only** truly static data file — it's public, small, and contains `CONFIG = { unionName, kakaoUrl, schedule: { unionRaid, soloRaid } }`. The schedule fields are `null` until confirmed; pages render "미정" when null.
+
+### Data shapes
+
+- `UNION` (from `member.js`): object keyed by season number as string, e.g. `UNION["40"]`. Each entry is `{ rank?, members: [...] }`. Entries per member always include `name`, `syncroLevel`, `uid`, `blaBlaLinkUId`, and optionally `role: "Leader" | "Officer"`. The **latest season only** also includes per-member gameplay fields: `normal`, `hard`, `tribeTower`, `overclock`, `outpost: { common, attack, defense, support, missilis, elysion, tetra, pilgrim, abnormal }`. To find the latest season use `Math.max(...Object.keys(UNION).map(Number))` (pages use `Object.keys(UNION).map(Number).sort((a,b)=>a-b)` and take the last element).
+- `RAID` (from `raid.js`): keyed by `"S<season>"` (e.g. `"S35"`).
+- `CHARACTER` (from `character.js`): keyed by `uid`, values are character arrays for the latest season only.
+
+When adding a new season, append a new top-level key to `UNION` in `api/_data/member.js` and a matching `"S<n>"` key to `RAID` in `api/_data/raid.js`. Refresh `CHARACTER` in `api/_data/character.js` (latest season only).
+
+### Caching
+
+`vercel.json` sets aggressive `Cache-Control` for `/css/*` (1 day) and `/image/*` (1 week). **Data responses (`/api/data`) use ETag + `private, no-cache` for authed responses, `no-store` for unauthed.** Unauthed responses must never be cached (would cause stale `__AUTH_REQUIRED` sentinel to be served to authed users → infinite redirect loop). Authed responses revalidate against the server on every request (preserving the per-request auth check from the earlier `no-store` regime), but the body is omitted via `304 Not Modified` when the content hash matches `If-None-Match`. ETags are precomputed from file contents at module load — Vercel reloads the function per deployment so data changes propagate automatically. Do not switch authed responses to `private, max-age=N` without revalidation: a previous `private, max-age=3600` caused a serious bug where the browser served cached authed data after session expiry, bypassing the `__AUTH_REQUIRED` redirect on pages whose data files were all cached (typically `index.html` + `raid.html` since `member.js`/`raid.js` were cached but `character.js` was not).
+
+### Theming
+
+Pure CSS custom properties on `:root` and `html.dark`. Dark-mode preference is persisted in `localStorage.theme` and applied pre-paint by a small inline `<script>` in each page's `<head>` to avoid a flash.
+
+## Conventions
+
+- UI strings, comments, and commit messages in the existing code are Korean; match that when editing user-visible text.
+- Character portrait images live in `image/<korean-name>.webp`; the `image/D_<name>.webp` prefix marks "deprecated/old" portraits kept for historical seasons.
+- No module system on the front-end — every data file declares a global (`CONFIG`, `UNION`, `RAID`, `CHARACTER`). Keep that pattern; the auth gate relies on `<script src>` semantics.
+
+## Workflow preferences
+
+- **PR 생성 시 자동 구독**: 이 저장소에서 PR을 생성한 직후에는 항상 `subscribe_pr_activity` 를 호출해 CI / 리뷰 코멘트 이벤트를 수신한다. 사용자에게 "구독할까요?" 재확인하지 말 것.

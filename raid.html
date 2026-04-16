@@ -504,6 +504,9 @@
       <!-- 덱 사용 현황 -->
       <div id="deckUsageSection"></div>
 
+      <!-- 캐릭터 사용 현황 -->
+      <div id="charUsageSection"></div>
+
     </div>
   </div>
 </main>
@@ -1273,17 +1276,21 @@ function renderDeckUsage(seasonKey) {
   sectionTitle.textContent = "덱 사용 현황";
   container.appendChild(sectionTitle);
 
-  // 보스별 그리드
+  // 보스별 그리드 (보스 수에 맞춰 열 수 고정)
   const grid = document.createElement("div");
-  grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;align-items:start;";
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(" + bosses.length + ",1fr);gap:12px;align-items:start;";
   container.appendChild(grid);
+
+  const MEDAL = ["🥇", "🥈", "🥉"];
+  const TOP1_BG     = "rgba(245,158,11,0.06)";
+  const TOP1_BG_DK  = "rgba(245,158,11,0.10)";
 
   bosses.forEach(function([bossName]) {
     const elem  = getBossElem(bossName);
     const short = shortBossName(bossName);
 
     // 보스별 덱 집계
-    const deckMap = new Map(); // key → { squad, count }
+    const deckMap = new Map();
     members.forEach(function(m) {
       m.raids.filter(function(r) { return r.bossName === bossName; }).forEach(function(r) {
         if (!r.squad || !r.squad.length) return;
@@ -1296,76 +1303,141 @@ function renderDeckUsage(seasonKey) {
 
     const sorted = [...deckMap.values()].sort(function(a, b) { return b.count - a.count; });
 
+    // 보스 카드
     const card = document.createElement("div");
-    card.style.minWidth = "0";
+    card.style.cssText =
+      "min-width:0;background:var(--bg-card);border:1px solid var(--border);" +
+      "border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.05);";
 
-    // 소제목
-    const title = document.createElement("div");
-    title.style.cssText = "font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;";
-    title.innerHTML = short + (elem ? ' <span class="elem-' + elem + '">[' + elem + ']</span>' : "");
-    card.appendChild(title);
+    // 카드 헤더
+    const header = document.createElement("div");
+    header.style.cssText =
+      "padding:8px 10px;border-bottom:1px solid var(--border);" +
+      "background:var(--bg-muted);display:flex;align-items:center;gap:5px;flex-wrap:wrap;";
+    header.innerHTML =
+      '<span style="font-size:12px;font-weight:700;color:var(--text);">' + short + '</span>' +
+      (elem ? '<span class="elem-' + elem + '" style="font-size:11px;font-weight:600;">[' + elem + ']</span>' : "");
+    card.appendChild(header);
 
-    const tableWrap = document.createElement("div");
-    tableWrap.className = "raid-table-wrap";
-
-    const table = document.createElement("table");
-    table.className = "raid-table";
-    table.style.width = "100%";
-
-    // thead
-    const thead = document.createElement("thead");
-    const hRow  = document.createElement("tr");
-    [
-      { label: "#",      width: "36px"  },
-      { label: "덱 구성", width: ""      },
-      { label: "횟수",   width: "56px"  },
-    ].forEach(function({ label, width }) {
-      const th = document.createElement("th");
-      th.textContent = label;
-      if (width) { th.style.width = width; th.style.minWidth = width; }
-      hRow.appendChild(th);
-    });
-    thead.appendChild(hRow);
-    table.appendChild(thead);
-
-    // tbody
-    const tbody = document.createElement("tbody");
+    // 덱 행들
     sorted.forEach(function(item, idx) {
-      const tr = document.createElement("tr");
+      const medal  = MEDAL[idx] || null;
+      const isTop1 = idx === 0;
 
-      const tdRank = document.createElement("td");
-      tdRank.textContent = idx + 1;
-      tr.appendChild(tdRank);
+      const row = document.createElement("div");
+      row.style.cssText =
+        "display:flex;align-items:center;gap:6px;padding:7px 10px;" +
+        "border-bottom:1px solid var(--bg-muted);" +
+        (isTop1 ? "background:" + TOP1_BG + ";" : "");
 
-      const tdDeck = document.createElement("td");
-      tdDeck.style.textAlign = "left";
-      tdDeck.style.padding   = "8px 10px";
-      // 표시는 slot 순 정렬
+      // 순위
+      const rankEl = document.createElement("div");
+      rankEl.style.cssText = "width:18px;text-align:center;flex-shrink:0;" +
+        (medal ? "font-size:14px;line-height:1;" : "font-size:10px;font-weight:600;color:var(--text-dim);");
+      rankEl.textContent = medal || (idx + 1);
+      row.appendChild(rankEl);
+
+      // 캐릭터 이미지
       const bySlot = [...item.squad].sort(function(a, b) { return a.slot - b.slot; });
-      tdDeck.innerHTML =
-        '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">' +
-        bySlot.map(function(c) {
-          return (
-            '<img src="' + charImgPath(c.name) + '" title="' + c.name + '" ' +
-            'style="width:34px;height:34px;border-radius:5px;object-fit:cover;" ' +
-            'onerror="this.onerror=null;this.src=\'' + DECK_IMG_FALLBACK + '\'">'
-          );
-        }).join("") +
-        '</div>';
-      tr.appendChild(tdDeck);
+      const imgs = document.createElement("div");
+      imgs.style.cssText = "display:flex;gap:2px;flex:1;";
+      imgs.innerHTML = bySlot.map(function(c) {
+        return '<img src="' + charImgPath(c.name) + '" title="' + c.name + '" ' +
+          'style="width:28px;height:28px;border-radius:4px;object-fit:cover;" ' +
+          'onerror="this.onerror=null;this.src=\'' + DECK_IMG_FALLBACK + '\'">';
+      }).join("");
+      row.appendChild(imgs);
 
-      const tdCount = document.createElement("td");
-      tdCount.style.fontWeight = "700";
-      tdCount.style.color      = "var(--blue)";
-      tdCount.textContent      = item.count + "회";
-      tr.appendChild(tdCount);
+      // 횟수 pill
+      const pill = document.createElement("div");
+      pill.style.cssText =
+        "flex-shrink:0;background:var(--blue);color:#fff;" +
+        "font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap;";
+      pill.textContent = item.count + "회";
+      row.appendChild(pill);
 
-      tbody.appendChild(tr);
+      card.appendChild(row);
     });
-    table.appendChild(tbody);
-    tableWrap.appendChild(table);
-    card.appendChild(tableWrap);
+
     grid.appendChild(card);
+  });
+}
+
+// ─── 캐릭터 사용 현황 렌더링 ──────────────────────────────────────
+function renderCharUsage(seasonKey) {
+  const members   = RAID[seasonKey] || [];
+  const container = document.getElementById("charUsageSection");
+  container.innerHTML = "";
+
+  // 캐릭터별 사용 횟수 집계
+  const charCount = new Map();
+  members.forEach(function(m) {
+    m.raids.forEach(function(r) {
+      if (!r.squad || !r.squad.length) return;
+      r.squad.forEach(function(c) {
+        charCount.set(c.name, (charCount.get(c.name) || 0) + 1);
+      });
+    });
+  });
+  if (!charCount.size) return;
+
+  const sorted = [...charCount.entries()]
+    .map(function([name, count]) { return { name: name, count: count }; })
+    .sort(function(a, b) { return b.count - a.count; });
+
+  // 구분선 + 섹션 제목
+  const sep = document.createElement("div");
+  sep.style.cssText = "border-top:1px solid var(--border);margin:28px 0 20px;";
+  container.appendChild(sep);
+
+  const sectionTitle = document.createElement("div");
+  sectionTitle.style.cssText = "font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;";
+  sectionTitle.textContent = "캐릭터 사용 현황";
+  container.appendChild(sectionTitle);
+
+  const MEDAL = ["🥇", "🥈", "🥉"];
+  const TOP_BORDER = ["#f59e0b", "#94a3b8", "#b45309"];
+
+  // 아이콘 카드 그리드
+  const cardGrid = document.createElement("div");
+  cardGrid.style.cssText = "display:flex;flex-wrap:wrap;gap:10px;";
+  container.appendChild(cardGrid);
+
+  sorted.forEach(function(item, idx) {
+    const medal = MEDAL[idx] || null;
+
+    const card = document.createElement("div");
+    card.style.cssText =
+      "position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;" +
+      "background:var(--bg-card);border:1.5px solid " + (idx < 3 ? TOP_BORDER[idx] : "var(--border)") + ";" +
+      "border-radius:12px;padding:12px 8px 10px;width:76px;box-sizing:border-box;" +
+      "box-shadow:0 1px 4px rgba(0,0,0,0.05);";
+
+    // 메달 배지
+    if (medal) {
+      const medalEl = document.createElement("div");
+      medalEl.style.cssText =
+        "position:absolute;top:-10px;left:50%;transform:translateX(-50%);" +
+        "font-size:15px;line-height:1;";
+      medalEl.textContent = medal;
+      card.appendChild(medalEl);
+    }
+
+    // 캐릭터 이미지
+    const img = document.createElement("img");
+    img.src   = charImgPath(item.name);
+    img.title = item.name;
+    img.style.cssText = "width:48px;height:48px;border-radius:8px;object-fit:cover;";
+    img.onerror = function() { this.onerror = null; this.src = DECK_IMG_FALLBACK; };
+    card.appendChild(img);
+
+    // 횟수
+    const countEl = document.createElement("div");
+    countEl.style.cssText = "font-size:12px;font-weight:700;color:var(--blue);";
+    countEl.textContent = item.count + "회";
+    card.appendChild(countEl);
+
+    cardGrid.appendChild(card);
   });
 }
 
@@ -1385,6 +1457,7 @@ function renderView(seasonKey) {
     renderRaidTable(seasonKey);
   }
   renderDeckUsage(seasonKey);
+  renderCharUsage(seasonKey);
 }
 
 // ─── 시즌 등수 배지 ──────────────────────────────────────────────

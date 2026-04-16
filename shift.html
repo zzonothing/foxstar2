@@ -1056,7 +1056,7 @@ function renderTable() {
 
   const dateEl = document.getElementById("shiftDateInfo");
   if (dateEl) {
-    dateEl.textContent = data.actionDate ? "기준: " + data.actionDate : "";
+    dateEl.textContent = CHARACTERS.actionDate ? "기준: " + CHARACTERS.actionDate : "";
   }
 
   displayRows.forEach(({ member, ch }, i) => {

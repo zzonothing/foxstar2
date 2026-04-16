@@ -11,7 +11,7 @@ module.exports = function handler(req, res) {
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
   const { password } = body;
   if (password && password === process.env.ACCESS_KEY) {
-    const token = generateToken(process.env.ACCESS_KEY);
+    const token = generateToken(process.env.SESSION_SECRET || process.env.ACCESS_KEY);
     const maxAge = 24 * 60 * 60; // 1일
     res.setHeader('Set-Cookie',
       'fstar_session=' + token +

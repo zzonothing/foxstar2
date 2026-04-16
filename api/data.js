@@ -22,9 +22,23 @@ function verifyToken(cookieHeader, secret) {
   if (dot < 0) return false;
   const ts  = raw.slice(0, dot);
   const sig = raw.slice(dot + 1);
-  const age = Date.now() - parseInt(ts, 10);
-  if (isNaN(age) || age < 0 || age > 7 * 24 * 60 * 60 * 1000) return false;
-  const expected = crypto.createHmac('sha256', secret).update(ts).digest('hex');
+
+  // 발급 시각 검증
+  const issued = parseInt(ts, 10);
+  if (isNaN(issued)) return false;
+
+  // 만료 검증 (1일)
+  const age = Date.now() - issued;
+  if (age < 0 || age > 24 * 60 * 60 * 1000) return false;
+
+  // SESSION_EPOCH 이전에 발급된 토큰 거부
+  // Vercel 환경변수에서 SESSION_EPOCH를 Unix timestamp(ms)로 설정하면 해당 시각 이전 토큰 전부 무효화
+  const epoch = parseInt(process.env.SESSION_EPOCH || '0', 10);
+  if (issued < epoch) return false;
+
+  // HMAC 서명 검증
+  const secret_ = process.env.SESSION_SECRET || secret;
+  const expected = crypto.createHmac('sha256', secret_).update(ts).digest('hex');
   try {
     return crypto.timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'));
   } catch {

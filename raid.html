@@ -479,11 +479,7 @@
 </main>
 
 <!-- ═══════════ 접근 제한 오버레이 ═══════════ -->
-<div id="authOverlay" style="
-  position:fixed; top:0; left:0; right:0; height:100dvh; z-index:9999;
-  display:flex; align-items:flex-start; justify-content:center;
-  background:var(--bg); padding:40px 24px 24px;
-"></div>
+<div id="authOverlay" style="display:none"></div>
 
 <!-- ═══════════ 데이터 로드 ═══════════ -->
 <script src="data/config.js"></script>
@@ -496,6 +492,14 @@
   const overlay = document.getElementById("authOverlay");
 
   if (!window.__AUTH_REQUIRED) { overlay.style.display = "none"; return; }
+
+  // 인증이 필요한 상태: 기존 메인 UI 를 완전히 숨기고 오버레이만 자연 흐름으로 표시.
+  document.querySelectorAll("header, main").forEach(function(el) { el.style.display = "none"; });
+  document.documentElement.style.height = "100%";
+  document.body.style.margin = "0";
+  overlay.style.cssText =
+    "min-height:100vh;padding:40px 24px 24px;background:var(--bg);" +
+    "display:flex;align-items:flex-start;justify-content:center;box-sizing:border-box;";
 
   // 오버레이 내부 렌더
   overlay.innerHTML =

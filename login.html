@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>로그인 | 여우별 유니온 포털</title>
+  <link rel="icon" type="image/png" href="image/foxstar.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark");</script>
+  <style>
+    :root {
+      --bg:       #eef1f6;
+      --bg-card:  #ffffff;
+      --bg-muted: #f4f6fa;
+      --border:   #e2e8f0;
+      --text:     #1e293b;
+      --text-sub: #64748b;
+      --blue:     #2563eb;
+    }
+    html.dark {
+      --bg:       #111827;
+      --bg-card:  #1f2937;
+      --bg-muted: #283548;
+      --border:   #374151;
+      --text:     #f9fafb;
+      --text-sub: #9ca3af;
+      --blue:     #60a5fa;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Noto Sans KR", "Apple SD Gothic Neo", sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px 18px;
+      width: 100%;
+      max-width: 280px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+      text-align: center;
+    }
+    .icon  { font-size: 24px; margin-bottom: 6px; }
+    .title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .sub   { font-size: 13px; color: var(--text-sub); margin-bottom: 16px; }
+    .hidden-username {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap; border: 0;
+    }
+    input[type="password"] {
+      width: 100%;
+      height: 42px;
+      padding: 0 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-muted);
+      color: var(--text);
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+      -webkit-appearance: none;
+      transition: border-color 0.2s;
+      margin-bottom: 10px;
+    }
+    input[type="password"]:focus { border-color: var(--blue); }
+    input[type="password"].err   { border-color: #ef4444; }
+    .err-msg {
+      font-size: 12px; color: #ef4444;
+      min-height: 18px; margin-bottom: 10px;
+    }
+    button {
+      width: 100%;
+      height: 44px;
+      border: none;
+      border-radius: 10px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      transition: opacity 0.15s;
+    }
+    button:disabled { opacity: 0.6; cursor: default; }
+  </style>
+</head>
+<body>
+
+<form class="card" id="authForm" action="/api/auth" method="post" novalidate>
+  <div class="icon">⬡</div>
+  <div class="title" id="authTitle">여우별 유니온</div>
+  <div class="sub">접근하려면 비밀번호를 입력하세요</div>
+
+  <!-- iOS Keychain 이 password-only 폼을 정상 처리하도록 username 힌트 제공 -->
+  <input class="hidden-username" type="text" name="username" autocomplete="username" value="member" tabindex="-1" aria-hidden="true" readonly />
+
+  <input id="authInput" type="password" name="password" placeholder="비밀번호" autocomplete="current-password" autofocus />
+  <div class="err-msg" id="authError"></div>
+  <button type="submit" id="authBtn">입장</button>
+</form>
+
+<script src="data/config.js"></script>
+<script>
+(function() {
+  if (typeof CONFIG !== "undefined" && CONFIG && CONFIG.unionName) {
+    document.getElementById("authTitle").textContent = CONFIG.unionName;
+    document.title = "로그인 | " + CONFIG.unionName;
+  }
+
+  var form  = document.getElementById("authForm");
+  var input = document.getElementById("authInput");
+  var btn   = document.getElementById("authBtn");
+  var err   = document.getElementById("authError");
+
+  // return 파라미터 화이트리스트 검증 — same-origin 의 알려진 페이지만 허용
+  var ALLOWED_PATHS = ["/", "/index.html", "/raid.html", "/shift.html", "/stats.html"];
+  function getReturnPath() {
+    try {
+      var raw = new URLSearchParams(location.search).get("return");
+      if (!raw) return "/";
+      // 절대 URL / 프로토콜 상대 URL 차단
+      if (!raw.startsWith("/") || raw.startsWith("//") || raw.indexOf("\\") >= 0) return "/";
+      // path 부분만 비교 (쿼리스트링 허용)
+      var pathOnly = raw.split("?")[0];
+      if (ALLOWED_PATHS.indexOf(pathOnly) < 0) return "/";
+      return raw;
+    } catch (e) {
+      return "/";
+    }
+  }
+
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
+    var entered = input.value.trim();
+    if (!entered) return;
+    btn.disabled = true;
+    fetch("/api/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: entered })
+    }).then(function(r) {
+      if (r.ok) {
+        location.replace(getReturnPath());
+      } else {
+        err.textContent = "비밀번호가 올바르지 않습니다";
+        input.value = "";
+        input.classList.add("err");
+        btn.disabled = false;
+        setTimeout(function() {
+          err.textContent = "";
+          input.classList.remove("err");
+        }, 2000);
+      }
+    }).catch(function() {
+      err.textContent = "네트워크 오류. 다시 시도해 주세요";
+      btn.disabled = false;
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

@@ -72,3 +72,7 @@ Pure CSS custom properties on `:root` and `html.dark`. Dark-mode preference is p
 - UI strings, comments, and commit messages in the existing code are Korean; match that when editing user-visible text.
 - Character portrait images live in `image/<korean-name>.webp`; the `image/D_<name>.webp` prefix marks "deprecated/old" portraits kept for historical seasons.
 - No module system on the front-end — every data file declares a global (`CONFIG`, `UNION`, `RAID`, `CHARACTER`). Keep that pattern; the auth gate relies on `<script src>` semantics.
+
+## Workflow preferences
+
+- **PR 생성 시 자동 구독**: 이 저장소에서 PR을 생성한 직후에는 항상 `subscribe_pr_activity` 를 호출해 CI / 리뷰 코멘트 이벤트를 수신한다. 사용자에게 "구독할까요?" 재확인하지 말 것.

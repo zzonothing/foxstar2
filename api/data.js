@@ -4,6 +4,9 @@ const crypto = require('crypto');
 
 const ALLOWED = new Set(['member.js', 'raid.js', 'character.js']);
 
+// 데이터 파일 위치: api/_data/ (Vercel이 정적으로 서빙하지 않는 경로)
+const DATA_DIR = path.join(process.cwd(), 'api', '_data');
+
 function parseCookies(header) {
   const out = {};
   if (!header) return out;
@@ -23,7 +26,6 @@ function verifyToken(cookieHeader, secret) {
   const ts  = raw.slice(0, dot);
   const sig = raw.slice(dot + 1);
 
-  // 발급 시각 검증
   const issued = parseInt(ts, 10);
   if (isNaN(issued)) return false;
 
@@ -31,8 +33,7 @@ function verifyToken(cookieHeader, secret) {
   const age = Date.now() - issued;
   if (age < 0 || age > 24 * 60 * 60 * 1000) return false;
 
-  // SESSION_EPOCH 이전에 발급된 토큰 거부
-  // Vercel 환경변수에서 SESSION_EPOCH를 Unix timestamp(ms)로 설정하면 해당 시각 이전 토큰 전부 무효화
+  // SESSION_EPOCH 이전 발급 토큰 거부
   const epoch = parseInt(process.env.SESSION_EPOCH || '0', 10);
   if (issued < epoch) return false;
 
@@ -58,7 +59,7 @@ module.exports = function handler(req, res) {
   }
 
   try {
-    const content = fs.readFileSync(path.join(process.cwd(), 'data', file), 'utf8');
+    const content = fs.readFileSync(path.join(DATA_DIR, file), 'utf8');
     return res.status(200).send(content);
   } catch {
     return res.status(404).end();

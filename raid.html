@@ -1133,9 +1133,11 @@ function renderDeckUsage(seasonKey) {
   sectionTitle.textContent = "덱 사용 현황";
   container.appendChild(sectionTitle);
 
-  // 보스별 그리드 (보스 수에 맞춰 열 수 고정)
+  // 보스별 그리드 (auto-fit 으로 카드 최소 width 보장 → 좁은 뷰포트에선 줄바꿈)
+  // 보스 수만큼 고정 열을 잡으면 모바일에서 칸이 너무 좁아져 캐릭터 이미지/pill
+  // 이 잘림. minmax(240px,1fr) 로 카드 최소폭 보장하고 공간 부족 시 다음 줄 wrap.
   const grid = document.createElement("div");
-  grid.style.cssText = "display:grid;grid-template-columns:repeat(" + bosses.length + ",1fr);gap:12px;align-items:start;";
+  grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;align-items:start;";
   container.appendChild(grid);
 
   const MEDAL = ["🥇", "🥈", "🥉"];

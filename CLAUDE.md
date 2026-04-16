@@ -30,12 +30,16 @@ Sensitive data files (`member.js`, `raid.js`, `character.js`) are **not** static
 3. `api/data.js` checks the `fstar_session` cookie (HMAC-SHA256 over a timestamp, 1-day expiry, verified with `crypto.timingSafeEqual`).
    - **Authenticated**: serves the file contents from `api/_data/` with `Cache-Control: private, max-age=3600` and `Content-Type: application/javascript`.
    - **Unauthenticated**: returns `200 OK` with body `window.__AUTH_REQUIRED=true;` and `Cache-Control: no-store`. Always `200` (not 401) so the `<script>` tag executes and sets the sentinel.
-4. Each HTML page checks `window.__AUTH_REQUIRED`. If set, the auth overlay is rendered and the main render path is guarded by `if (!window.__AUTH_REQUIRED) { … }` (closed with a matching `}` near end of file, e.g. `index.html:389` → `index.html:1102`). If unset, the overlay is hidden and the page renders normally.
-5. Password submission POSTs to `/api/auth` (`api/auth.js`), which sets the `fstar_session` cookie on success; the page then `location.reload()`s and hits path 3.
+4. Each HTML page checks `window.__AUTH_REQUIRED`. If set, the page **redirects to `/login.html?return=<current-path>`** via `location.replace()` before the main script runs. The main render path is additionally guarded by `if (!window.__AUTH_REQUIRED) { … }` (closed with a matching `}` near end of file — search for the comment `} // if (!window.__AUTH_REQUIRED)`) as a defensive no-op during the brief moment before navigation completes.
+5. `/login.html` is a standalone minimal page (no header, no sticky/fixed layout, no view-transition, no speculation rules, no html2canvas). It POSTs the password to `/api/auth` (`api/auth.js`), which sets the `fstar_session` cookie on success; the page then `location.replace()`s to the validated `return` path. The `return` parameter is whitelisted to `{/, /index.html, /raid.html, /shift.html, /stats.html}` to prevent open-redirect.
+
+The redirect-to-dedicated-page approach (instead of an in-page overlay) was chosen to work around an iOS 26 Safari bug where `visualViewport.offsetTop` doesn't reset after keyboard dismissal, causing `position: fixed` / `position: sticky` elements (and the whole page layout) to become misaligned during password-input focus. The login page has no fixed/sticky positioning so it bypasses the bug.
 
 Consequences for editing:
 - Never move the sensitive data files out of `api/_data/` — they'd become directly fetchable.
-- The auth guard `if (!window.__AUTH_REQUIRED) { … }` wraps the entire main script on each HTML page. When editing main-page JS, keep the brace balance intact (the closing `}` is far from the opening; search for the comment `} // if (!window.__AUTH_REQUIRED)` to find it).
+- The auth guard `if (!window.__AUTH_REQUIRED) { … }` still wraps the entire main script on each HTML page. When editing main-page JS, keep the brace balance intact (the closing `}` is far from the opening; search for the comment `} // if (!window.__AUTH_REQUIRED)` to find it).
+- Keep `/login.html` structurally minimal. Do **not** add a sticky header, view-transition, speculation rules, or `position: fixed` elements — those bring the iOS 26 bug back.
+- When adding a new top-level page, add its path to the `ALLOWED_PATHS` whitelist in `login.html` **and** add a redirect-to-login snippet at the top of its scripts (copy from any existing page).
 - Vercel functions use CommonJS (`module.exports = function handler(req, res) {}`), not ES modules.
 
 ### Page layout

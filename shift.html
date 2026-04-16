@@ -373,6 +373,7 @@
       <a href="index.html">홈</a>
       <a href="raid.html">유니온레이드</a>
       <a href="shift.html" class="active">시프티패드</a>
+      <a href="stats.html">여우별 통계</a>
     </nav>
   </div>
 </header>
@@ -777,8 +778,10 @@ function upgradeBadge(val) {
 
 // ─── 소장품 표시 ─────────────────────────────────────────────────
 function itemHtml(grade, level) {
+  if (!grade) return "—";
   const cls = grade === "SSR" ? "item-ssr" : grade === "SR" ? "item-sr" : "item-r";
-  return '<span class="' + cls + '">' + grade + ' ' + level + '</span>';
+  const lvStr = (level != null) ? level : "—";
+  return '<span class="' + cls + '">' + grade + ' ' + lvStr + '</span>';
 }
 
 // ─── 스킬 표시 ───────────────────────────────────────────────────

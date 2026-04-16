@@ -371,11 +371,14 @@
     /* ── 보스 뷰 그리드 ─────────────────────────────────────── */
     #bossView {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
       align-items: start;
     }
-    @media (max-width: 900px) {
+    @media (max-width: 1100px) {
+      #bossView { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 720px) {
       #bossView { grid-template-columns: 1fr; }
     }
 
@@ -1056,6 +1059,8 @@ function renderBossView(seasonKey) {
   }));
   const bosses = [...bossMap.entries()].sort((a, b) => a[1] - b[1]);
 
+  const BOSS_MEDAL = ["🥇", "🥈", "🥉"];
+
   bosses.forEach(([bossName]) => {
     const elem  = getBossElem(bossName);
     const short = shortBossName(bossName);
@@ -1066,86 +1071,105 @@ function renderBossView(seasonKey) {
       m.raids.filter(r => r.bossName === bossName).forEach(r => {
         const ratio = getLv400Ratio(r.squad);
         bossRows.push({
-          name:     m.name,
-          openId:   m.openId,
-          dmg:      r.totalDamage,
-          dmgAdj:   r.totalDamage * ratio,
-          finalHit: r.isFinalHit,
-          squad:    r.squad,
+          name:      m.name,
+          openId:    m.openId,
+          dmg:       r.totalDamage,
+          dmgAdj:    r.totalDamage * ratio,
+          finalHit:  r.isFinalHit,
+          squad:     r.squad,
           bossLevel: r.bossLevel,
         });
       });
     });
     bossRows.sort((a, b) => lv400 ? b.dmgAdj - a.dmgAdj : b.dmg - a.dmg);
 
-    const wrapper = document.createElement("div");
-    wrapper.style.minWidth = "0"; /* grid child overflow 방지 */
+    // ── 카드 래퍼 ────────────────────────────────────────────────
+    const card = document.createElement("div");
+    card.style.cssText =
+      "min-width:0;background:var(--bg-card);border:1px solid var(--border);" +
+      "border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.06);";
 
-    // 보스 제목 + 복사 버튼 행
-    const titleRow = document.createElement("div");
-    titleRow.className = "boss-view-title-row";
+    // ── 카드 헤더 (보스명 + 복사 버튼) ──────────────────────────
+    const cardHeader = document.createElement("div");
+    cardHeader.style.cssText =
+      "display:flex;align-items:center;justify-content:space-between;gap:8px;" +
+      "padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg-muted);";
 
-    const title = document.createElement("div");
-    title.className = "boss-view-title";
-    title.innerHTML = short + (elem ? ' <span class="elem-' + elem + '">[' + elem + ']</span>' : "");
-    titleRow.appendChild(title);
+    const headerLeft = document.createElement("div");
+    headerLeft.style.cssText = "display:flex;align-items:center;gap:6px;";
+    headerLeft.innerHTML =
+      '<span style="font-size:13px;font-weight:700;color:var(--text);">' + short + '</span>' +
+      (elem ? '<span class="elem-' + elem + '" style="font-size:12px;font-weight:600;">[' + elem + ']</span>' : "");
+    cardHeader.appendChild(headerLeft);
 
     const copyBtn = document.createElement("button");
     copyBtn.className   = "copy-btn";
     copyBtn.textContent = "복사";
-    titleRow.appendChild(copyBtn);
+    cardHeader.appendChild(copyBtn);
 
-    wrapper.appendChild(titleRow);
+    card.appendChild(cardHeader);
 
-    const tableWrap = document.createElement("div");
+    // ── 행 목록 ──────────────────────────────────────────────────
+    const showDeckBoss = document.getElementById("deckToggle").checked;
+    const tableWrap    = document.createElement("div");
     tableWrap.className = "raid-table-wrap";
 
     const table = document.createElement("table");
     table.className = "raid-table";
+    table.style.width = "100%";
 
     // thead
     const thead     = document.createElement("thead");
     const headerRow = document.createElement("tr");
     [
-      { label: "#",         width: "40px"  },
-      { label: "닉네임",    width: "160px" },
-      { label: "싱크로레벨", width: "80px"  },
-      { label: "대미지",    width: "150px" },
-    ].forEach(({ label, width }) => {
+      { label: "#",      width: "34px",  fixed: true  },
+      { label: "닉네임", width: "120px", fixed: true  },
+      { label: "싱크로레벨", width: "80px",  fixed: true  },
+      { label: "대미지", width: null,    fixed: false },
+    ].forEach(({ label, width, fixed }) => {
       const th = document.createElement("th");
-      th.textContent    = label;
-      th.style.width    = width;
-      th.style.minWidth = width;
+      th.textContent = label;
+      if (fixed) { th.style.width = width; th.style.minWidth = width; }
       headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
     // tbody
-    const tbody   = document.createElement("tbody");
-    const showDeckBoss = document.getElementById("deckToggle").checked;
+    const tbody = document.createElement("tbody");
     bossRows.forEach((row, idx) => {
       const tr          = document.createElement("tr");
       const syncroLevel = syncroMap[row.openId] || "—";
+      const medal       = BOSS_MEDAL[idx] || null;
+      const isTop1      = idx === 0;
 
+      if (isTop1) tr.style.background = "rgba(245,158,11,0.05)";
+
+      // 순위
       const tdRank = document.createElement("td");
-      tdRank.textContent = idx + 1;
+      tdRank.style.cssText = medal ? "font-size:16px;line-height:1;" : "font-size:12px;color:var(--text-sub);";
+      tdRank.textContent   = medal || (idx + 1);
       tr.appendChild(tdRank);
 
+      // 닉네임
       const tdName = document.createElement("td");
       tdName.className   = "td-name";
+      tdName.style.fontWeight = isTop1 ? "800" : "";
       tdName.textContent = row.name;
       tr.appendChild(tdName);
 
+      // 싱크로
       const tdSync = document.createElement("td");
       tdSync.textContent = syncroLevel;
       tr.appendChild(tdSync);
 
-      const tdDmg   = document.createElement("td");
+      // 대미지
+      const tdDmg    = document.createElement("td");
       tdDmg.className = "td-damage" + (elem ? " td-boss-" + elem : "");
-      const dmgStyle  = row.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
-      tdDmg.innerHTML  = '<span style="font-size:11px;color:var(--text-sub);margin-right:4px;">Lv.' + row.bossLevel + '</span>' +
-        '<span' + dmgStyle + '>' + fmt(lv400 ? row.dmgAdj : row.dmg) + '</span>' +
+      const dmgColor  = row.finalHit ? "color:var(--red);font-weight:700;" : (isTop1 ? "color:var(--blue);font-weight:700;" : "");
+      tdDmg.innerHTML =
+        '<span style="font-size:10px;color:var(--text-sub);margin-right:3px;">Lv.' + row.bossLevel + '</span>' +
+        '<span style="' + dmgColor + '">' + fmt(lv400 ? row.dmgAdj : row.dmg) + '</span>' +
         (showDeckBoss ? deckImagesHtml([row.squad]) : "");
       tr.appendChild(tdDmg);
 
@@ -1158,7 +1182,7 @@ function renderBossView(seasonKey) {
     const tfr   = document.createElement("tr");
 
     const tfEmpty = document.createElement("td"); tfEmpty.textContent = ""; tfr.appendChild(tfEmpty);
-    const tfName  = document.createElement("td"); tfName.textContent  = ""; tfr.appendChild(tfName);
+    const tfName  = document.createElement("td"); tfName.textContent  = "합계"; tfName.style.cssText = "text-align:left;font-size:11px;color:var(--text-sub);"; tfr.appendChild(tfName);
 
     const validLevels = bossRows.map(r => syncroMap[r.openId]).filter(v => v != null);
     const avgLevel = validLevels.length
@@ -1183,8 +1207,8 @@ function renderBossView(seasonKey) {
     });
 
     tableWrap.appendChild(table);
-    wrapper.appendChild(tableWrap);
-    bossView.appendChild(wrapper);
+    card.appendChild(tableWrap);
+    bossView.appendChild(card);
   });
 }
 

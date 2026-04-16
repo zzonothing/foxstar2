@@ -459,7 +459,7 @@ function statCell(val, key) {
   if (val == null) return '<td class="center">—</td>';
   const isMax = String(val) === String(STAT_MAX[key]);
   const style = isMax
-    ? ' style="color:#c0392b;font-weight:700;"'
+    ? ' style="color:var(--red);font-weight:700;"'
     : '';
   return '<td class="center"' + style + '>' + val + '</td>';
 }

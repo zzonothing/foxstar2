@@ -898,11 +898,79 @@ renderDecks();
     modalBody.appendChild(raidSection);
   }
 
+  // ── 인증 확인 ──────────────────────────────────────────────────
+  const AUTH_STORE = "fstar_auth";
+  function isAuthed() {
+    return localStorage.getItem(AUTH_STORE) === btoa(CONFIG.accessKey);
+  }
+
+  // ── 비밀번호 확인 후 콜백 실행 ──────────────────────────────────
+  function requireAuth(callback) {
+    if (isAuthed()) { callback(); return; }
+
+    // 인증 오버레이 생성
+    const authOv = document.createElement("div");
+    authOv.style.cssText =
+      "position:fixed;inset:0;z-index:10000;" +
+      "background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);" +
+      "display:flex;align-items:flex-start;justify-content:center;padding-top:120px;";
+
+    authOv.innerHTML =
+      '<div style="' +
+        'background:var(--bg);border:1.5px solid var(--border);border-radius:18px;' +
+        'padding:28px 28px 24px;width:320px;max-width:90vw;box-shadow:0 8px 32px rgba(0,0,0,0.25);' +
+      '">' +
+        '<div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px;">' + CONFIG.unionName + '</div>' +
+        '<div style="font-size:13px;color:var(--text-sub);margin-bottom:24px;">멤버 상세 정보를 보려면 비밀번호를 입력하세요</div>' +
+        '<input id="memberAuthInput" type="password" placeholder="비밀번호" autocomplete="off" style="' +
+          'width:100%;box-sizing:border-box;height:42px;padding:0 14px;' +
+          'border:1.5px solid var(--border);border-radius:10px;' +
+          'background:var(--bg-muted,var(--bg));color:var(--text);' +
+          'font-size:16px;outline:none;margin-bottom:10px;' +
+        '">' +
+        '<div id="memberAuthError" style="font-size:12px;color:#ef4444;min-height:18px;margin-bottom:10px;"></div>' +
+        '<button id="memberAuthBtn" style="' +
+          'width:100%;height:42px;border:none;border-radius:10px;' +
+          'background:var(--blue);color:#fff;font-size:15px;font-weight:600;cursor:pointer;margin-bottom:10px;' +
+        '">확인</button>' +
+        '<button id="memberAuthCancel" style="' +
+          'width:100%;height:36px;border:1.5px solid var(--border);border-radius:10px;' +
+          'background:transparent;color:var(--text-sub);font-size:13px;cursor:pointer;' +
+        '">취소</button>' +
+      '</div>';
+
+    document.body.appendChild(authOv);
+
+    const inp    = authOv.querySelector("#memberAuthInput");
+    const btn    = authOv.querySelector("#memberAuthBtn");
+    const errEl  = authOv.querySelector("#memberAuthError");
+    const cancel = authOv.querySelector("#memberAuthCancel");
+
+    function close() { document.body.removeChild(authOv); }
+
+    function attempt() {
+      if (inp.value === CONFIG.accessKey) {
+        localStorage.setItem(AUTH_STORE, btoa(CONFIG.accessKey));
+        close();
+        callback();
+      } else {
+        errEl.textContent = "비밀번호가 올바르지 않습니다.";
+        inp.value = "";
+      }
+    }
+
+    btn.addEventListener("click", attempt);
+    cancel.addEventListener("click", close);
+    authOv.addEventListener("click", function(e) { if (e.target === authOv) close(); });
+    inp.addEventListener("keydown", function(e) { if (e.key === "Enter") attempt(); });
+  }
+
   // 닉네임 클릭 이벤트 (이벤트 위임)
   document.getElementById("memberTableBody").addEventListener("click", function(e) {
     const target = e.target.closest(".name-clickable");
     if (!target) return;
-    openMemberModal(target.dataset.name);
+    const name = target.dataset.name;
+    requireAuth(function() { openMemberModal(name); });
   });
 
   // 닫기

@@ -52,11 +52,14 @@ module.exports = function handler(req, res) {
   if (!file || !ALLOWED.has(file)) return res.status(404).end();
 
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-store');
 
   if (!verifyToken(req.headers.cookie, process.env.ACCESS_KEY)) {
+    res.setHeader('Cache-Control', 'no-store');
     return res.status(200).send('window.__AUTH_REQUIRED=true;');
   }
+
+  // 인증된 사용자: 브라우저 전용 캐시 1시간 허용 (CDN 캐시 제외)
+  res.setHeader('Cache-Control', 'private, max-age=3600');
 
   try {
     const content = fs.readFileSync(path.join(DATA_DIR, file), 'utf8');

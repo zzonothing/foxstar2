@@ -11,6 +11,147 @@
   <script>if(localStorage.getItem("theme")==="dark")document.documentElement.classList.add("dark");</script>
   <link rel="stylesheet" href="css/style.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    /* ── 닉네임 클릭 커서 ──────────────────────────────────────── */
+    .name-clickable {
+      cursor: pointer;
+      text-decoration: underline dotted;
+      text-underline-offset: 3px;
+    }
+    .name-clickable:hover { color: var(--blue); }
+
+    /* ── 멤버 상세 오버레이 ─────────────────────────────────────── */
+    .member-overlay {
+      position: fixed; inset: 0; z-index: 8000;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.45);
+      padding: 20px;
+      backdrop-filter: blur(2px);
+    }
+    .member-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      width: 100%; max-width: 600px;
+      max-height: 88vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 16px 48px rgba(0,0,0,0.22);
+      overflow: hidden;
+    }
+    html.dark .member-card { box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+
+    .member-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 22px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .member-card-name {
+      font-size: 18px; font-weight: 700; color: var(--text);
+    }
+    .member-card-sub {
+      font-size: 12px; color: var(--text-sub); margin-top: 2px;
+    }
+    .member-card-close {
+      width: 30px; height: 30px;
+      border: none; border-radius: 8px;
+      background: var(--bg-muted);
+      color: var(--text-sub);
+      font-size: 16px; cursor: pointer; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .member-card-close:hover { background: var(--border); }
+
+    .member-card-body {
+      overflow-y: auto; -webkit-overflow-scrolling: touch;
+      padding: 20px 22px 24px;
+      display: flex; flex-direction: column; gap: 24px;
+    }
+
+    /* 섹션 제목 */
+    .member-section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: .07em;
+      text-transform: uppercase; color: var(--text-sub);
+      margin-bottom: 10px;
+    }
+
+    /* 싱크로레벨 히스토리 */
+    .sync-history {
+      display: flex; align-items: flex-end; gap: 8px;
+      flex-wrap: wrap;
+    }
+    .sync-item {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      min-width: 44px;
+    }
+    .sync-bar-wrap {
+      width: 32px;
+      border-radius: 4px 4px 0 0;
+      position: relative;
+      display: flex; align-items: flex-end; justify-content: center;
+    }
+    .sync-bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      transition: height 0.3s;
+      background: var(--blue);
+    }
+    .sync-bar.latest { background: var(--blue); }
+    .sync-val {
+      font-size: 11px; font-weight: 700; color: var(--text);
+      white-space: nowrap;
+    }
+    .sync-season {
+      font-size: 10px; color: var(--text-sub);
+    }
+    .sync-diff-up   { font-size: 10px; color: var(--green); font-weight: 600; }
+    .sync-diff-down { font-size: 10px; color: var(--red);   font-weight: 600; }
+    .sync-diff-zero { font-size: 10px; color: var(--text-dim); }
+    .sync-diff-new  { font-size: 10px; color: var(--blue);  font-weight: 600; }
+
+    /* 레이드 히스토리 테이블 */
+    .raid-hist-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .raid-hist-table th {
+      padding: 7px 10px;
+      font-size: 10px; font-weight: 700; letter-spacing: .05em;
+      text-transform: uppercase; color: var(--text-sub);
+      background: var(--bg-muted);
+      text-align: center;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .raid-hist-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--bg-muted);
+      color: var(--text); text-align: center; vertical-align: middle;
+    }
+    .raid-hist-table tbody tr:last-child td { border-bottom: none; }
+    .raid-hist-table tbody tr:hover td { background: var(--bg-muted); }
+    .rh-season  { font-weight: 700; }
+    .rh-boss    { text-align: left !important; font-weight: 600; color: var(--text); }
+    .rh-dmg     { font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
+    .rh-total   { font-weight: 700; color: var(--blue); }
+    .rh-final   { color: var(--red); font-weight: 700; }
+    .rh-section-row td {
+      background: var(--bg-muted);
+      font-size: 11px; font-weight: 700;
+      color: var(--text-sub); padding: 5px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .rh-no-data { text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px 0; }
+
+    @media (max-width: 480px) {
+      .member-overlay { padding: 12px; }
+      .member-card { border-radius: 14px; max-height: 92vh; }
+      .member-card-header { padding: 14px 16px 12px; }
+      .member-card-body { padding: 14px 16px 20px; }
+    }
+  </style>
 </head>
 <body>
 
@@ -104,6 +245,20 @@
   </div>
 </main>
 
+<!-- ═══════════ 멤버 상세 팝업 ═══════════ -->
+<div id="memberModal" class="member-overlay" style="display:none">
+  <div class="member-card">
+    <div class="member-card-header">
+      <div>
+        <div class="member-card-name" id="memberModalName"></div>
+        <div class="member-card-sub" id="memberModalSub"></div>
+      </div>
+      <button class="member-card-close" id="memberModalClose">✕</button>
+    </div>
+    <div class="member-card-body" id="memberModalBody"></div>
+  </div>
+</div>
+
 <!-- ═══════════ 공지 상세 모달 ═══════════ -->
 <div id="noticeModal" class="modal-overlay" style="display:none">
   <div class="modal-card">
@@ -117,6 +272,7 @@
 <!-- ═══════════ 데이터 로드 ═══════════ -->
 <script src="data/config.js"></script>
 <script src="data/union.js"></script>
+<script src="data/raid.js"></script>
 <script src="data/announcements.js"></script>
 
 <!-- ═══════════ 메인 스크립트 ═══════════ -->
@@ -253,7 +409,7 @@ sorted.forEach((m, i) => {
   const tr = document.createElement("tr");
   tr.innerHTML =
     '<td class="' + rankClass + '">' + (i + 1) + '</td>' +
-    '<td class="primary">' + m.name + (role === "Leader" ? ' <span title="리더" style="font-size:1em;">👑</span>' : role === "Officer" ? ' <span title="서브리더" style="font-size:1em;filter:grayscale(1) brightness(0.9) contrast(1.4);">👑</span>' : '') + '</td>' +
+    '<td class="primary"><span class="name-clickable" data-name="' + m.name + '">' + m.name + '</span>' + (role === "Leader" ? ' <span title="리더" style="font-size:1em;">👑</span>' : role === "Officer" ? ' <span title="서브리더" style="font-size:1em;filter:grayscale(1) brightness(0.9) contrast(1.4);">👑</span>' : '') + '</td>' +
     '<td><span style="font-weight:600;color:var(--text)">' + m.syncroLevel + '</span> ' + diffHtml + '</td>' +
     (avgRiseFinal[m.name] != null
       ? '<td class="center" style="color:var(--green);font-size:0.85em;">+' + avgRiseFinal[m.name] + '</td>'
@@ -479,6 +635,285 @@ renderDecks();
     }).catch(function() {
       btn.disabled = false;
     });
+  });
+})();
+
+// ─── 멤버 상세 팝업 ─────────────────────────────────────────────
+(function() {
+  const modal = document.getElementById("memberModal");
+  const modalName = document.getElementById("memberModalName");
+  const modalSub  = document.getElementById("memberModalSub");
+  const modalBody = document.getElementById("memberModalBody");
+
+  function fmtDmg(num) {
+    if (!num) return "—";
+    return (num / 100000000).toFixed(2) + "억";
+  }
+
+  function openMemberModal(name) {
+    modal.style.display = "flex";
+    modalName.textContent = name;
+    modalSub.textContent  = "";
+    modalBody.innerHTML   = "";
+
+    // ── 1. 싱크로레벨 히스토리 ─────────────────────────────────
+    const syncSection = document.createElement("div");
+
+    const syncTitle = document.createElement("div");
+    syncTitle.className = "member-section-title";
+    syncTitle.textContent = "싱크로레벨 변화";
+    syncSection.appendChild(syncTitle);
+
+    // 모든 시즌에서 이 멤버의 데이터 수집 (uid 또는 name 매칭)
+    const syncHistory = [];
+    seasonKeys.forEach(k => {
+      const season = UNION[k];
+      if (!season || !season.members) return;
+      const found = season.members.find(m => m.name === name);
+      if (found) syncHistory.push({ season: "S" + k, level: found.syncroLevel });
+    });
+
+    if (syncHistory.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "rh-no-data";
+      empty.textContent = "데이터 없음";
+      syncSection.appendChild(empty);
+    } else {
+      // SVG 차트 — raid 차트와 동일한 레이아웃
+      (function() {
+        const NS = "http://www.w3.org/2000/svg";
+        function el(tag, attrs) {
+          const e = document.createElementNS(NS, tag);
+          Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k, v));
+          return e;
+        }
+        const TOP=22, BAR_MAX=66, BAR_W=32, IW=58, GAP=14, PX=16, LH=38;
+        const n = syncHistory.length;
+        const svgW = PX*2 + n*IW + (n>1 ? (n-1)*GAP : 0);
+        const svgH = TOP + BAR_MAX + LH;
+        const maxLevel = Math.max(...syncHistory.map(h => h.level));
+
+        function CX(i) { return PX + i*(IW+GAP) + IW/2; }
+        function BH(lv) { return Math.max(6, (lv / maxLevel) * BAR_MAX); }
+
+        const svg = el("svg", {
+          viewBox: "0 0 " + svgW + " " + svgH,
+          width: "100%",
+          style: "display:block;max-width:" + Math.min(svgW, 520) + "px;overflow:visible;margin-bottom:4px;"
+        });
+
+        syncHistory.forEach((h, idx) => {
+          const prev     = idx > 0 ? syncHistory[idx - 1].level : null;
+          const diff     = prev != null ? h.level - prev : null;
+          const isLatest = idx === syncHistory.length - 1;
+          const x  = CX(idx);
+          const bh = BH(h.level);
+          const bx = x - BAR_W/2;
+
+          // 막대
+          svg.appendChild(el("rect", {
+            x: bx, y: TOP + BAR_MAX - bh,
+            width: BAR_W, height: bh, rx: 4,
+            fill: "var(--blue)", opacity: isLatest ? "0.85" : "0.45"
+          }));
+
+          // 차이 텍스트 (막대 위)
+          const diffTxt = diff == null ? "New"
+            : diff > 0 ? "+" + diff
+            : diff < 0 ? String(diff) : "±0";
+          const diffColor = diff == null ? "var(--blue)"
+            : diff > 0 ? "var(--green)"
+            : diff < 0 ? "var(--red)" : "var(--text-dim)";
+          const dt = el("text", { x, y: TOP + BAR_MAX - bh - 5,
+            "text-anchor": "middle", "font-size": "10", "font-weight": "700", fill: diffColor });
+          dt.textContent = diffTxt;
+          svg.appendChild(dt);
+
+          // 레벨 수치
+          const vt = el("text", { x, y: TOP + BAR_MAX + 14,
+            "text-anchor": "middle", "font-size": "11", "font-weight": "700", fill: "var(--text)" });
+          vt.textContent = h.level;
+          svg.appendChild(vt);
+
+          // 시즌
+          const st = el("text", { x, y: TOP + BAR_MAX + 27,
+            "text-anchor": "middle", "font-size": "10", fill: "var(--text-sub)" });
+          st.textContent = h.season;
+          svg.appendChild(st);
+        });
+
+        syncSection.appendChild(svg);
+      })();
+    }
+    modalBody.appendChild(syncSection);
+
+    // ── 2. 유니온레이드 기록 ───────────────────────────────────
+    if (typeof RAID === "undefined") return;
+
+    const raidSection = document.createElement("div");
+    const raidTitle = document.createElement("div");
+    raidTitle.className = "member-section-title";
+    raidTitle.textContent = "유니온레이드 기록";
+    raidSection.appendChild(raidTitle);
+
+    // UNION blaBlaLinkUId 로 openId 매핑
+    const openIdSet = new Set();
+    seasonKeys.forEach(k => {
+      const season = UNION[k];
+      if (!season || !season.members) return;
+      const found = season.members.find(m => m.name === name);
+      if (found && found.blaBlaLinkUId) openIdSet.add(found.blaBlaLinkUId);
+    });
+
+    // RAID에서 해당 멤버 기록 수집
+    const raidSeasonKeys = Object.keys(RAID).sort((a, b) => {
+      return Number(a.replace("S","")) - Number(b.replace("S",""));
+    });
+
+    const raidHistory = []; // { season, total, rank, memberCount, raids[] }
+    raidSeasonKeys.forEach(sk => {
+      const members = RAID[sk] || [];
+      const found = members.find(m =>
+        m.name === name || openIdSet.has(m.openId)
+      );
+      if (!found) return;
+      const total = found.raids.reduce((s, r) => s + r.totalDamage, 0);
+
+      // 해당 시즌 전체 멤버 총대미지 내림차순 정렬 → 순위 계산
+      const allTotals = members.map(m => m.raids.reduce((s, r) => s + r.totalDamage, 0))
+                               .sort((a, b) => b - a);
+      const rank = allTotals.findIndex(t => t <= total) + 1;
+
+      raidHistory.push({ season: sk, total, rank, memberCount: members.length, raids: found.raids });
+    });
+
+    if (raidHistory.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "rh-no-data";
+      empty.textContent = "레이드 기록 없음";
+      raidSection.appendChild(empty);
+    } else {
+      // ── 추이 차트 (SVG — 막대: 총대미지 / 꺾은선: 순위) ─────────
+      (function() {
+        const NS = "http://www.w3.org/2000/svg";
+        function el(tag, attrs) {
+          const e = document.createElementNS(NS, tag);
+          Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k, v));
+          return e;
+        }
+
+        const TOP = 22, BAR_MAX = 66, BAR_W = 32, IW = 58, GAP = 14, PX = 16, LH = 38;
+        const n   = raidHistory.length;
+        const svgW = PX*2 + n*IW + (n>1 ? (n-1)*GAP : 0);
+        const svgH = TOP + BAR_MAX + LH;
+
+        const maxTotal = Math.max(...raidHistory.map(h => h.total));
+
+        // x 중심
+        function CX(i) { return PX + i*(IW+GAP) + IW/2; }
+        // 막대 높이
+        function BH(t) { return Math.max(6, (t / maxTotal) * BAR_MAX); }
+
+        const svg = el("svg", {
+          viewBox: "0 0 " + svgW + " " + svgH,
+          width: "100%",
+          style: "display:block;max-width:" + Math.min(svgW, 520) + "px;overflow:visible;margin-bottom:16px;"
+        });
+
+        raidHistory.forEach(({season, total, rank}, i) => {
+          const x  = CX(i);
+          const bh = BH(total);
+          const bx = x - BAR_W/2;
+
+          // 막대 (배경 없이 fill만)
+          svg.appendChild(el("rect", { x:bx, y:TOP+BAR_MAX-bh, width:BAR_W, height:bh, rx:4, fill:"var(--blue)", opacity:"0.6" }));
+
+          // 순위 텍스트 (막대 위)
+          const rt = el("text", { x, y:TOP+BAR_MAX-bh-5, "text-anchor":"middle", "font-size":"10", "font-weight":"700", fill:"var(--text)" });
+          rt.textContent = rank + "위";
+          svg.appendChild(rt);
+
+          // 대미지
+          const dt = el("text", { x, y:TOP+BAR_MAX+14, "text-anchor":"middle", "font-size":"10", "font-weight":"700", fill:"var(--blue)" });
+          dt.textContent = fmtDmg(total);
+          svg.appendChild(dt);
+
+          // 시즌
+          const st = el("text", { x, y:TOP+BAR_MAX+27, "text-anchor":"middle", "font-size":"10", fill:"var(--text-sub)" });
+          st.textContent = season;
+          svg.appendChild(st);
+        });
+
+        raidSection.appendChild(svg);
+      })();
+
+      // ── 상세 테이블 ──────────────────────────────────────────
+      const table = document.createElement("table");
+      table.className = "raid-hist-table";
+
+      const thead = document.createElement("thead");
+      thead.innerHTML = '<tr>' +
+        '<th style="text-align:left">보스</th><th>Lv</th><th>대미지</th>' +
+        '</tr>';
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      [...raidHistory].reverse().forEach(({ season, total, rank, memberCount, raids }) => {
+        // 시즌 구분 행
+        const secTr = document.createElement("tr");
+        secTr.className = "rh-section-row";
+        secTr.innerHTML =
+          '<td colspan="3">' + season +
+            ' — 총 <span style="color:var(--blue)">' + fmtDmg(total) + '</span>' +
+            ' &nbsp;<span style="color:var(--text-dim);font-weight:500;">(' + rank + '위 / ' + memberCount + '명)</span>' +
+          '</td>';
+        tbody.appendChild(secTr);
+
+        // 보스별 행 (step 순)
+        const sortedRaids = [...raids].sort((a, b) => a.step - b.step);
+        sortedRaids.forEach(r => {
+          const tr = document.createElement("tr");
+          const shortBoss = r.bossName.replace(/\s*\[.*?\]$/, "").trim();
+          const elemMatch = r.bossName.match(/\[([^\]]+)\]$/);
+          const elemMap = { "Z.E.U.S.":"철갑","H.S.T.A.":"수냉","D.M.T.R.":"풍압","A.N.M.I.":"작열","A.N.M.I":"작열","P.S.I.D.":"전격" };
+          const elem = elemMatch ? (elemMap[elemMatch[1]] || "") : "";
+          const elemColors = { "수냉":"#3b82f6","전격":"#a855f7","풍압":"#22c55e","작열":"#ef4444","철갑":"#f59e0b" };
+          const elemStyle = elem ? ' <span style="font-size:10px;color:' + (elemColors[elem]||"#94a3b8") + '">[' + elem + ']</span>' : "";
+          const dmgStyle = r.isFinalHit
+            ? 'font-weight:700;color:var(--red);font-variant-numeric:tabular-nums'
+            : 'font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums';
+
+          tr.innerHTML =
+            '<td class="rh-boss">' + shortBoss + elemStyle + '</td>' +
+            '<td>Lv.' + r.bossLevel + '</td>' +
+            '<td style="' + dmgStyle + '">' + fmtDmg(r.totalDamage) + '</td>';
+          tbody.appendChild(tr);
+        });
+      });
+
+      table.appendChild(tbody);
+      raidSection.appendChild(table);
+    }
+    modalBody.appendChild(raidSection);
+  }
+
+  // 닉네임 클릭 이벤트 (이벤트 위임)
+  document.getElementById("memberTableBody").addEventListener("click", function(e) {
+    const target = e.target.closest(".name-clickable");
+    if (!target) return;
+    openMemberModal(target.dataset.name);
+  });
+
+  // 닫기
+  document.getElementById("memberModalClose").addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+  modal.addEventListener("click", function(e) {
+    if (e.target === this) modal.style.display = "none";
+  });
+  document.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && modal.style.display !== "none") modal.style.display = "none";
   });
 })();
 

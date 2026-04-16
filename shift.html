@@ -426,7 +426,9 @@
         <label>
           <span>캐릭터</span>
           <div class="char-combo" id="charComboWrap">
-            <input type="text" id="charInput" class="char-combo-input" placeholder="전체" autocomplete="off">
+            <!-- inputmode="none" : 모바일에서 소프트 키보드 차단 (iOS 26 visualViewport 버그 회피).
+                 데스크톱 물리 키보드 입력은 그대로 동작. -->
+            <input type="text" id="charInput" class="char-combo-input" placeholder="전체" autocomplete="off" inputmode="none">
             <div class="char-dropdown" id="charDropdown"></div>
           </div>
         </label>

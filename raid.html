@@ -234,6 +234,8 @@
 
     /* 레벨 컬럼 – 좁은 컬럼에 맞게 좌우 padding 축소 */
     .raid-table .col-lv { padding-left: 4px; padding-right: 4px; }
+    /* 요약 모드 보스 컬럼 – 압축 padding */
+    .raid-table .td-summary { padding-left: 4px; padding-right: 4px; }
 
     /* 푸터 */
     .raid-table tfoot td {
@@ -770,7 +772,7 @@ function renderRaidTable(seasonKey) {
   // ── 헤더 구성 ────────────────────────────────────────────────
   const headerRow = document.createElement("tr");
   const fixedCols = summary
-    ? [{ label: "닉네임", width: "120px" }]
+    ? [{ label: "닉네임", width: "100px" }]
     : [
         { label: "#",         width: "40px"  },
         { label: "닉네임",    width: "160px" },
@@ -785,12 +787,12 @@ function renderRaidTable(seasonKey) {
     if (cls) th.className = cls;
     headerRow.appendChild(th);
   });
-  const summaryBossW = summary ? (compact ? "95px" : "150px") : null;
+  const summaryBossW = summary ? (compact ? "70px" : "120px") : null;
   bosses.forEach(([bossName]) => {
     const elem  = getBossElem(bossName);
     const short = shortBossName(bossName);
     const th    = document.createElement("th");
-    th.className = "th-boss";
+    th.className = "th-boss" + (summary ? " td-summary" : "");
     th.title     = bossName;
     if (summary) {
       th.style.width    = summaryBossW;
@@ -869,8 +871,9 @@ function renderRaidTable(seasonKey) {
       const td    = document.createElement("td");
       const entry = member.raidMap[bossName];
       const elem  = getBossElem(bossName);
+      const elemCls = elem ? "td-boss-" + elem : "td-boss";
       if (entry) {
-        td.className = "td-damage " + (elem ? "td-boss-" + elem : "td-boss");
+        td.className = "td-damage " + elemCls + (summary ? " td-summary" : "");
         if (summary) {
           td.textContent = fmt(lv400 ? entry.dmgAdj : entry.dmg);
         } else {
@@ -882,7 +885,7 @@ function renderRaidTable(seasonKey) {
           }).join('<div style="margin-top:6px;"></div>');
         }
       } else {
-        td.className   = "td-empty td-boss-empty";
+        td.className   = "td-empty td-boss-empty" + (summary ? " td-summary" : "");
         td.textContent = "";
       }
       tr.appendChild(td);
@@ -936,7 +939,7 @@ function renderRaidTable(seasonKey) {
       if (entry) { sumDmg += lv400 ? entry.dmgAdj : entry.dmg; totalHits += entry.hits.length; }
     });
     const td = document.createElement("td");
-    td.className = elem ? "td-boss-" + elem : "";
+    td.className = (elem ? "td-boss-" + elem : "") + (summary ? " td-summary" : "");
     if (sumDmg) {
       td.innerHTML = summary
         ? fmt(sumDmg)

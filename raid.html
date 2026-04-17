@@ -232,6 +232,9 @@
     .td-total  { font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
     .td-empty  { color: var(--text-dim); }
 
+    /* 레벨 컬럼 – 좁은 컬럼에 맞게 좌우 padding 축소 */
+    .raid-table .col-lv { padding-left: 4px; padding-right: 4px; }
+
     /* 푸터 */
     .raid-table tfoot td {
       padding: 10px 14px;
@@ -366,6 +369,9 @@
       .toolbar-divider { display: none; }
       .rank-badge { padding: 7px 14px; }
       .rank-badge-value { font-size: 17px; }
+      /* 좁은 화면에서 대미지 컬럼에 덱 이미지 한 줄이 들어가도록 가로 padding 축소 */
+      .raid-table th, .raid-table td { padding-left: 8px; padding-right: 8px; }
+      .raid-table .col-lv { padding-left: 3px; padding-right: 3px; }
     }
     @media (max-width: 480px) {
       .raid-toolbar {
@@ -773,14 +779,15 @@ function renderRaidTable(seasonKey) {
   const fixedCols = [
     { label: "#",         width: "40px"  },
     { label: "닉네임",    width: "160px" },
-    { label: "레벨",      width: "56px"  },
+    { label: "레벨",      width: "40px", cls: "col-lv" },
     { label: "총 대미지",  width: "150px" },
   ];
-  fixedCols.forEach(({ label, width }) => {
+  fixedCols.forEach(({ label, width, cls }) => {
     const th = document.createElement("th");
     th.textContent   = label;
     th.style.width    = width;
     th.style.minWidth = width;
+    if (cls) th.className = cls;
     headerRow.appendChild(th);
   });
   bosses.forEach(([bossName]) => {
@@ -839,6 +846,7 @@ function renderRaidTable(seasonKey) {
 
     // 싱크로레벨
     const tdSync = document.createElement("td");
+    tdSync.className = "col-lv";
     tdSync.textContent = syncroLevel;
     tr.appendChild(tdSync);
 
@@ -893,6 +901,7 @@ function renderRaidTable(seasonKey) {
     ? (validLevels.reduce((s, v) => s + v, 0) / validLevels.length).toFixed(1)
     : "—";
   const tfSync = document.createElement("td");
+  tfSync.className = "col-lv";
   tfSync.innerHTML = avgLevel + '<div class="td-foot-sub">평균</div>';
   tfr.appendChild(tfSync);
 
@@ -1004,13 +1013,14 @@ function renderBossView(seasonKey) {
     const thead     = document.createElement("thead");
     const headerRow = document.createElement("tr");
     [
-      { label: "#",      width: "34px",  fixed: true  },
-      { label: "닉네임", width: "120px", fixed: true  },
-      { label: "레벨",   width: "56px",  fixed: true  },
+      { label: "#",      width: "26px",  fixed: true  },
+      { label: "닉네임", width: "92px",  fixed: true  },
+      { label: "레벨",   width: "40px",  fixed: true, cls: "col-lv" },
       { label: "대미지", width: null,    fixed: false },
-    ].forEach(({ label, width, fixed }) => {
+    ].forEach(({ label, width, fixed, cls }) => {
       const th = document.createElement("th");
       th.textContent = label;
+      if (cls) th.className = cls;
       if (fixed) { th.style.width = width; th.style.minWidth = width; }
       headerRow.appendChild(th);
     });
@@ -1042,6 +1052,7 @@ function renderBossView(seasonKey) {
 
       // 싱크로
       const tdSync = document.createElement("td");
+      tdSync.className = "col-lv";
       tdSync.textContent = syncroLevel;
       tr.appendChild(tdSync);
 
@@ -1071,6 +1082,7 @@ function renderBossView(seasonKey) {
       ? (validLevels.reduce((s, v) => s + v, 0) / validLevels.length).toFixed(1)
       : "—";
     const tfSync = document.createElement("td");
+    tfSync.className = "col-lv";
     tfSync.innerHTML = avgLevel + '<div class="td-foot-sub">평균</div>';
     tfr.appendChild(tfSync);
 

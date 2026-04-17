@@ -770,7 +770,7 @@ function renderRaidTable(seasonKey) {
   // ── 헤더 구성 ────────────────────────────────────────────────
   const headerRow = document.createElement("tr");
   const fixedCols = summary
-    ? [{ label: "닉네임", width: "160px" }]
+    ? [{ label: "닉네임", width: "120px" }]
     : [
         { label: "#",         width: "40px"  },
         { label: "닉네임",    width: "160px" },
@@ -785,6 +785,7 @@ function renderRaidTable(seasonKey) {
     if (cls) th.className = cls;
     headerRow.appendChild(th);
   });
+  const summaryBossW = summary ? (compact ? "95px" : "150px") : null;
   bosses.forEach(([bossName]) => {
     const elem  = getBossElem(bossName);
     const short = shortBossName(bossName);
@@ -792,6 +793,9 @@ function renderRaidTable(seasonKey) {
     th.className = "th-boss";
     th.title     = bossName;
     if (summary) {
+      th.style.width    = summaryBossW;
+      th.style.minWidth = summaryBossW;
+      th.style.maxWidth = summaryBossW;
       th.innerHTML = elem ? '<span class="elem-' + elem + '">[' + elem + ']</span>' : short;
     } else {
       th.innerHTML = short +

@@ -424,12 +424,18 @@
             <input type="radio" id="typeBoss" name="typeSelect" value="boss">
             <label for="typeBoss">보스</label>
           </div>
+          <div class="toolbar-divider"></div>
+          <label class="toggle-wrap" for="summaryToggle">
+            <input type="checkbox" id="summaryToggle">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-text">요약</span>
+          </label>
         </div>
         <div class="toolbar-right">
           <label class="toggle-wrap" for="compactToggle">
             <input type="checkbox" id="compactToggle" checked>
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            <span class="toggle-text">간략히</span>
+            <span class="toggle-text">대미지 간략히</span>
           </label>
           <label class="toggle-wrap" for="deckToggle">
             <input type="checkbox" id="deckToggle" checked>
@@ -735,6 +741,7 @@ seasonSelect.value = seasonKeys[0];
 // ─── 렌더링 ──────────────────────────────────────────────────────
 function renderRaidTable(seasonKey) {
   const compact   = document.getElementById("compactToggle").checked;
+  const summary   = document.getElementById("summaryToggle").checked;
   const fmt       = compact ? fmtCompact : fmtFull;
   const members   = RAID[seasonKey] || [];
   const thead     = document.getElementById("raidTableHead");
@@ -762,12 +769,14 @@ function renderRaidTable(seasonKey) {
 
   // ── 헤더 구성 ────────────────────────────────────────────────
   const headerRow = document.createElement("tr");
-  const fixedCols = [
-    { label: "#",         width: "40px"  },
-    { label: "닉네임",    width: "160px" },
-    { label: "레벨",      width: "40px", cls: "col-lv" },
-    { label: "총 대미지",  width: "150px" },
-  ];
+  const fixedCols = summary
+    ? [{ label: "닉네임", width: "160px" }]
+    : [
+        { label: "#",         width: "40px"  },
+        { label: "닉네임",    width: "160px" },
+        { label: "레벨",      width: "40px", cls: "col-lv" },
+        { label: "총 대미지",  width: "150px" },
+      ];
   fixedCols.forEach(({ label, width, cls }) => {
     const th = document.createElement("th");
     th.textContent   = label;
@@ -782,8 +791,12 @@ function renderRaidTable(seasonKey) {
     const th    = document.createElement("th");
     th.className = "th-boss";
     th.title     = bossName;
-    th.innerHTML = short +
-      (elem ? '<br><span class="elem-' + elem + '">[' + elem + ']</span>' : "");
+    if (summary) {
+      th.innerHTML = elem ? '<span class="elem-' + elem + '">[' + elem + ']</span>' : short;
+    } else {
+      th.innerHTML = short +
+        (elem ? '<br><span class="elem-' + elem + '">[' + elem + ']</span>' : "");
+    }
     headerRow.appendChild(th);
   });
   thead.appendChild(headerRow);
@@ -819,10 +832,12 @@ function renderRaidTable(seasonKey) {
 
     const tr = document.createElement("tr");
 
-    // 순위
-    const tdRank = document.createElement("td");
-    tdRank.textContent = idx + 1;
-    tr.appendChild(tdRank);
+    if (!summary) {
+      // 순위
+      const tdRank = document.createElement("td");
+      tdRank.textContent = idx + 1;
+      tr.appendChild(tdRank);
+    }
 
     // 닉네임
     const tdName = document.createElement("td");
@@ -830,32 +845,38 @@ function renderRaidTable(seasonKey) {
     tdName.textContent = member.name;
     tr.appendChild(tdName);
 
-    // 싱크로레벨
-    const tdSync = document.createElement("td");
-    tdSync.className = "col-lv";
-    tdSync.textContent = syncroLevel;
-    tr.appendChild(tdSync);
+    if (!summary) {
+      // 싱크로레벨
+      const tdSync = document.createElement("td");
+      tdSync.className = "col-lv";
+      tdSync.textContent = syncroLevel;
+      tr.appendChild(tdSync);
 
-    // 총 대미지
-    const tdTotal = document.createElement("td");
-    tdTotal.className   = "td-total";
-    tdTotal.textContent = fmt(lv400 ? member.totalAdj : member.total);
-    tr.appendChild(tdTotal);
+      // 총 대미지
+      const tdTotal = document.createElement("td");
+      tdTotal.className   = "td-total";
+      tdTotal.textContent = fmt(lv400 ? member.totalAdj : member.total);
+      tr.appendChild(tdTotal);
+    }
 
     // 보스별 대미지
-    const showDeck = document.getElementById("deckToggle").checked;
+    const showDeck = document.getElementById("deckToggle").checked && !summary;
     bosses.forEach(([bossName]) => {
       const td    = document.createElement("td");
       const entry = member.raidMap[bossName];
       const elem  = getBossElem(bossName);
       if (entry) {
         td.className = "td-damage " + (elem ? "td-boss-" + elem : "td-boss");
-        td.innerHTML = entry.hits.map(hit => {
-          const dmgStyle = hit.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
-          return '<span style="font-size:11px;color:var(--text-sub);margin-right:4px;">Lv.' + hit.bossLevel + '</span>' +
-            '<span' + dmgStyle + '>' + fmt(lv400 ? hit.dmgAdj : hit.dmg) + '</span>' +
-            (showDeck ? deckImagesHtml([hit.squad]) : "");
-        }).join('<div style="margin-top:6px;"></div>');
+        if (summary) {
+          td.textContent = fmt(lv400 ? entry.dmgAdj : entry.dmg);
+        } else {
+          td.innerHTML = entry.hits.map(hit => {
+            const dmgStyle = hit.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
+            return '<span style="font-size:11px;color:var(--text-sub);margin-right:4px;">Lv.' + hit.bossLevel + '</span>' +
+              '<span' + dmgStyle + '>' + fmt(lv400 ? hit.dmgAdj : hit.dmg) + '</span>' +
+              (showDeck ? deckImagesHtml([hit.squad]) : "");
+          }).join('<div style="margin-top:6px;"></div>');
+        }
       } else {
         td.className   = "td-empty td-boss-empty";
         td.textContent = "";
@@ -871,33 +892,37 @@ function renderRaidTable(seasonKey) {
   tfoot.innerHTML = "";
   const tfr = document.createElement("tr");
 
-  // # 셀 (빈칸)
-  const tfEmpty = document.createElement("td");
-  tfEmpty.textContent = "";
-  tfr.appendChild(tfEmpty);
+  if (!summary) {
+    // # 셀 (빈칸)
+    const tfEmpty = document.createElement("td");
+    tfEmpty.textContent = "";
+    tfr.appendChild(tfEmpty);
+  }
 
   // 닉네임 셀 (빈칸)
   const tfName = document.createElement("td");
   tfName.textContent = "";
   tfr.appendChild(tfName);
 
-  // 싱크로레벨 → 평균
-  const validLevels = rows.map(m => syncroMap[m.openId]).filter(v => v != null);
-  const avgLevel = validLevels.length
-    ? (validLevels.reduce((s, v) => s + v, 0) / validLevels.length).toFixed(1)
-    : "—";
-  const tfSync = document.createElement("td");
-  tfSync.className = "col-lv";
-  tfSync.innerHTML = avgLevel + '<div class="td-foot-sub">평균</div>';
-  tfr.appendChild(tfSync);
+  if (!summary) {
+    // 싱크로레벨 → 평균
+    const validLevels = rows.map(m => syncroMap[m.openId]).filter(v => v != null);
+    const avgLevel = validLevels.length
+      ? (validLevels.reduce((s, v) => s + v, 0) / validLevels.length).toFixed(1)
+      : "—";
+    const tfSync = document.createElement("td");
+    tfSync.className = "col-lv";
+    tfSync.innerHTML = avgLevel + '<div class="td-foot-sub">평균</div>';
+    tfr.appendChild(tfSync);
 
-  // 총 대미지 → 합산
-  const grandTotal = rows.reduce((s, m) => s + (lv400 ? m.totalAdj : m.total), 0);
-  const tfTotal = document.createElement("td");
-  tfTotal.textContent = fmt(grandTotal);
-  tfr.appendChild(tfTotal);
+    // 총 대미지 → 합산
+    const grandTotal = rows.reduce((s, m) => s + (lv400 ? m.totalAdj : m.total), 0);
+    const tfTotal = document.createElement("td");
+    tfTotal.textContent = fmt(grandTotal);
+    tfr.appendChild(tfTotal);
+  }
 
-  // 보스별 합산 + 참여 인원수
+  // 보스별 합산 (요약 모드에서는 타격 회수 생략)
   bosses.forEach(([bossName]) => {
     const elem  = getBossElem(bossName);
     let sumDmg  = 0;
@@ -909,7 +934,9 @@ function renderRaidTable(seasonKey) {
     const td = document.createElement("td");
     td.className = elem ? "td-boss-" + elem : "";
     if (sumDmg) {
-      td.innerHTML = fmt(sumDmg) + '<div class="td-foot-sub">' + totalHits + '회 타격</div>';
+      td.innerHTML = summary
+        ? fmt(sumDmg)
+        : fmt(sumDmg) + '<div class="td-foot-sub">' + totalHits + '회 타격</div>';
     } else {
       td.textContent = "";
     }
@@ -1333,6 +1360,7 @@ seasonSelect.addEventListener("change", () => {
   renderRank(seasonSelect.value);
 });
 document.getElementById("compactToggle").addEventListener("change", () => renderView(seasonSelect.value));
+document.getElementById("summaryToggle").addEventListener("change", () => renderView(seasonSelect.value));
 document.querySelectorAll('input[name="typeSelect"]').forEach(r =>
   r.addEventListener("change", () => renderView(seasonSelect.value))
 );

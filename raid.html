@@ -535,7 +535,7 @@ function deckImagesHtml(squads) {
       'style="width:24px;height:24px;border-radius:3px;object-fit:cover;flex-shrink:0;" ' +
       'onerror="this.onerror=null;this.src=\'' + DECK_IMG_FALLBACK + '\'">'
     ).join("");
-    return '<div style="display:flex;gap:2px;margin-top:5px;justify-content:center;">' + imgs + '</div>';
+    return '<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:5px;justify-content:center;">' + imgs + '</div>';
   }).join("");
 }
 
@@ -773,7 +773,7 @@ function renderRaidTable(seasonKey) {
   const fixedCols = [
     { label: "#",         width: "40px"  },
     { label: "닉네임",    width: "160px" },
-    { label: "싱크로레벨", width: "80px"  },
+    { label: "레벨",      width: "56px"  },
     { label: "총 대미지",  width: "150px" },
   ];
   fixedCols.forEach(({ label, width }) => {
@@ -1006,7 +1006,7 @@ function renderBossView(seasonKey) {
     [
       { label: "#",      width: "34px",  fixed: true  },
       { label: "닉네임", width: "120px", fixed: true  },
-      { label: "싱크로레벨", width: "80px",  fixed: true  },
+      { label: "레벨",   width: "56px",  fixed: true  },
       { label: "대미지", width: null,    fixed: false },
     ].forEach(({ label, width, fixed }) => {
       const th = document.createElement("th");

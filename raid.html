@@ -234,8 +234,14 @@
 
     /* 레벨 컬럼 – 좁은 컬럼에 맞게 좌우 padding 축소 */
     .raid-table .col-lv { padding-left: 4px; padding-right: 4px; }
-    /* 요약 모드 보스 컬럼 – 압축 padding */
-    .raid-table .td-summary { padding-left: 4px; padding-right: 4px; }
+    /* 요약 모드 보스 컬럼 – 압축 padding + td-boss-* 의 160px 제약 해제 */
+    .raid-table .td-summary {
+      padding-left: 4px;
+      padding-right: 4px;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+    }
 
     /* 푸터 */
     .raid-table tfoot td {
@@ -742,8 +748,9 @@ seasonSelect.value = seasonKeys[0];
 
 // ─── 렌더링 ──────────────────────────────────────────────────────
 function renderRaidTable(seasonKey) {
-  const compact   = document.getElementById("compactToggle").checked;
   const summary   = document.getElementById("summaryToggle").checked;
+  // 요약 모드는 대미지 간략히 ON / 덱 보기 OFF 상태를 강제해서 압축 표시
+  const compact   = summary ? true : document.getElementById("compactToggle").checked;
   const fmt       = compact ? fmtCompact : fmtFull;
   const members   = RAID[seasonKey] || [];
   const thead     = document.getElementById("raidTableHead");
@@ -772,7 +779,7 @@ function renderRaidTable(seasonKey) {
   // ── 헤더 구성 ────────────────────────────────────────────────
   const headerRow = document.createElement("tr");
   const fixedCols = summary
-    ? [{ label: "닉네임", width: "100px" }]
+    ? [{ label: "닉네임", width: "90px" }]
     : [
         { label: "#",         width: "40px"  },
         { label: "닉네임",    width: "160px" },
@@ -787,7 +794,7 @@ function renderRaidTable(seasonKey) {
     if (cls) th.className = cls;
     headerRow.appendChild(th);
   });
-  const summaryBossW = summary ? (compact ? "70px" : "120px") : null;
+  const summaryBossW = summary ? "60px" : null;
   bosses.forEach(([bossName]) => {
     const elem  = getBossElem(bossName);
     const short = shortBossName(bossName);

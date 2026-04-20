@@ -232,6 +232,19 @@
     .td-total  { font-weight: 700; color: var(--blue); font-variant-numeric: tabular-nums; }
     .td-empty  { color: var(--text-dim); }
 
+    /* 레벨 컬럼 – 좁은 컬럼에 맞게 좌우 padding 축소 */
+    .raid-table .col-lv { padding-left: 4px; padding-right: 4px; }
+    /* 요약 모드 – 폰트 축소 + 압축 padding + td-boss-* 의 160px 제약 해제 */
+    .raid-table .td-summary {
+      padding-left: 3px;
+      padding-right: 3px;
+      font-size: 11px;
+      width: auto;
+      min-width: 0;
+      max-width: none;
+    }
+    .raid-table th.td-summary { font-size: 10px; }
+
     /* 푸터 */
     .raid-table tfoot td {
       padding: 10px 14px;
@@ -275,11 +288,8 @@
       table-layout: fixed;
       width: auto;
     }
-    .boss-hp-table col.col-num   { width: 40px;  }
     .boss-hp-table col.col-name  { width: 130px; }
-    .boss-hp-table col.col-lv    { width: 48px;  }
     .boss-hp-table col.col-hp    { width: 200px; }
-    .boss-hp-table col.col-pct   { width: 150px; }
     .boss-hp-table th {
       padding: 8px 12px;
       font-size: 10px;
@@ -309,11 +319,6 @@
     .boss-hp-table tbody tr:last-child td { border-bottom: 2px solid var(--border); }
     .boss-hp-table tbody tr:hover td { background: var(--bg-muted); }
 
-    .hp-cell-inner {
-      display: inline-block;
-      width: 148px;
-      text-align: right;
-    }
     .hp-pct-cell {
       display: inline-flex;
       align-items: center;
@@ -341,7 +346,7 @@
     /* 보스 컬럼 고정 너비 */
     .th-boss, .td-boss-수냉, .td-boss-전격, .td-boss-풍압,
     .td-boss-작열, .td-boss-철갑, .td-boss-empty {
-      width: 150px; min-width: 150px; max-width: 150px;
+      width: 160px; min-width: 160px; max-width: 160px;
     }
 
     /* ── 보스 뷰 그리드 ─────────────────────────────────────── */
@@ -366,6 +371,9 @@
       .toolbar-divider { display: none; }
       .rank-badge { padding: 7px 14px; }
       .rank-badge-value { font-size: 17px; }
+      /* 좁은 화면에서 대미지 컬럼에 덱 이미지 한 줄이 들어가도록 가로 padding 축소 */
+      .raid-table th, .raid-table td { padding-left: 8px; padding-right: 8px; }
+      .raid-table .col-lv { padding-left: 3px; padding-right: 3px; }
     }
     @media (max-width: 480px) {
       .raid-toolbar {
@@ -426,12 +434,18 @@
             <input type="radio" id="typeBoss" name="typeSelect" value="boss">
             <label for="typeBoss">보스</label>
           </div>
+          <div class="toolbar-divider"></div>
+          <label class="toggle-wrap" for="summaryToggle">
+            <input type="checkbox" id="summaryToggle">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span class="toggle-text">요약</span>
+          </label>
         </div>
         <div class="toolbar-right">
           <label class="toggle-wrap" for="compactToggle">
             <input type="checkbox" id="compactToggle" checked>
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            <span class="toggle-text">간략히</span>
+            <span class="toggle-text">대미지 간략히</span>
           </label>
           <label class="toggle-wrap" for="deckToggle">
             <input type="checkbox" id="deckToggle" checked>
@@ -535,7 +549,7 @@ function deckImagesHtml(squads) {
       'style="width:24px;height:24px;border-radius:3px;object-fit:cover;flex-shrink:0;" ' +
       'onerror="this.onerror=null;this.src=\'' + DECK_IMG_FALLBACK + '\'">'
     ).join("");
-    return '<div style="display:flex;gap:2px;margin-top:5px;justify-content:center;">' + imgs + '</div>';
+    return '<div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:5px;justify-content:center;">' + imgs + '</div>';
   }).join("");
 }
 
@@ -582,19 +596,36 @@ function renderBossHpSummary(seasonKey) {
 
   const bosses = [...bossData.entries()].sort((a, b) => a[1].step - b[1].step);
 
+  // 각 보스의 레벨/HP 정보 선계산
+  const bossesInfo = bosses.map(([bossName, { step, hits }]) => {
+    const elem     = getBossElem(bossName);
+    const short    = shortBossName(bossName);
+    const hpArr    = BOSS_HP[step];
+    const maxLevel = Math.max(...hits.map(h => h.bossLevel));
+    const hitsAtMax     = hits.filter(h => h.bossLevel === maxLevel);
+    const totalDmgAtMax = hitsAtMax.reduce((s, h) => s + h.dmg, 0);
+    const isKilled      = hitsAtMax.some(h => h.finalHit);
+    const nextHp = hpArr ? (hpArr[maxLevel] ?? null) : null;
+    const displayLevel = (isKilled && nextHp != null) ? maxLevel + 1 : maxLevel;
+    const totalHp = hpArr ? (hpArr[displayLevel - 1] ?? null) : null;
+    const slain = isKilled && nextHp == null;
+    const remaining = slain ? 0
+                    : (isKilled ? totalHp
+                    : (totalHp != null ? Math.max(0, totalHp - totalDmgAtMax) : null));
+    const pct = (totalHp && remaining != null) ? (remaining / totalHp * 100) : null;
+    return { elem, short, displayLevel, totalHp, remaining, pct, slain };
+  });
+
   const wrap  = document.createElement("div");
   wrap.style.cssText = "display:block; overflow-x:auto; -webkit-overflow-scrolling:touch;";
   const table = document.createElement("table");
   table.className = "boss-hp-table";
 
-  // colgroup으로 컬럼 너비 고정 (full 포맷은 HP 컬럼 더 넓게)
+  // colgroup (보스명 / HP 2컬럼)
   const colgroup = document.createElement("colgroup");
   const colDefs = [
-    { cls: "col-num"  },
     { cls: "col-name" },
-    { cls: "col-lv"   },
     { cls: "col-hp",  width: compact ? "200px" : "270px" },
-    { cls: "col-pct" },
   ];
   colDefs.forEach(({ cls, width }) => {
     const col = document.createElement("col");
@@ -604,10 +635,16 @@ function renderBossHpSummary(seasonKey) {
   });
   table.appendChild(colgroup);
 
-  // 헤더
+  // 헤더: 보스 (Lv.X) / HP
+  const maxDisplayLevel = bossesInfo.length
+    ? Math.max(...bossesInfo.map(b => b.displayLevel))
+    : null;
+  const bossHeaderLabel = maxDisplayLevel != null
+    ? '보스 (Lv.' + maxDisplayLevel + ')'
+    : '보스';
   const thead  = document.createElement("thead");
   const hRow   = document.createElement("tr");
-  ["#", "보스", "Lv", "HP", "잔여 %"].forEach(label => {
+  [bossHeaderLabel, "HP"].forEach(label => {
     const th = document.createElement("th");
     th.textContent = label;
     hRow.appendChild(th);
@@ -617,32 +654,8 @@ function renderBossHpSummary(seasonKey) {
 
   // 바디
   const tbody = document.createElement("tbody");
-  bosses.forEach(([bossName, { step, hits }], bossIdx) => {
-    const elem     = getBossElem(bossName);
-    const short    = shortBossName(bossName);
-    const hpArr    = BOSS_HP[step];
-    const maxLevel = Math.max(...hits.map(h => h.bossLevel));
-    const hitsAtMax     = hits.filter(h => h.bossLevel === maxLevel);
-    const totalDmgAtMax = hitsAtMax.reduce((s, h) => s + h.dmg, 0);
-    const isKilled      = hitsAtMax.some(h => h.finalHit);
-
-    // 처치됐고 다음 레벨 HP 데이터가 있으면 → 다음 레벨 100%
-    // 처치됐고 다음 레벨 HP 데이터가 없으면 (Lv3 처치 등) → 현재 레벨 0%
-    const nextHp = hpArr ? (hpArr[maxLevel] ?? null) : null; // hpArr[maxLevel] = level maxLevel+1
-    const displayLevel = (isKilled && nextHp != null) ? maxLevel + 1 : maxLevel;
-    const totalHp      = hpArr ? (hpArr[displayLevel - 1] ?? null) : null;
-    const slain        = isKilled && nextHp == null; // 마지막 레벨 처치
-    const remaining    = slain ? 0
-                       : (isKilled ? totalHp
-                       : (totalHp != null ? Math.max(0, totalHp - totalDmgAtMax) : null));
-    const pct          = (totalHp && remaining != null) ? (remaining / totalHp * 100) : null;
-
+  bossesInfo.forEach(({ elem, short, totalHp, remaining, pct, slain }) => {
     const tr = document.createElement("tr");
-
-    // 순번
-    const tdNum = document.createElement("td");
-    tdNum.textContent = bossIdx + 1;
-    tr.appendChild(tdNum);
 
     // 보스명
     const tdName = document.createElement("td");
@@ -651,50 +664,45 @@ function renderBossHpSummary(seasonKey) {
       (elem ? ' <span class="elem-' + elem + '">[' + elem + ']</span>' : "");
     tr.appendChild(tdName);
 
-    // 현재 Lv
-    const tdLv = document.createElement("td");
-    tdLv.textContent = "Lv." + displayLevel;
-    tr.appendChild(tdLv);
-
-    // HP (남은 피통 / 총 피통)
+    // HP (위: 게이지바+% / 아래: 남은/총 피통)
     const tdHp = document.createElement("td");
     tdHp.style.fontVariantNumeric = "tabular-nums";
-    const totalStr = totalHp ? fmt(totalHp) : "—";
-    let hpInner;
-    if (slain) {
-      hpInner = '<span style="color:var(--red);font-weight:700;">처치</span>' +
-        ' <span style="color:var(--text-sub);">/ ' + totalStr + '</span>';
-    } else {
-      const remStr = remaining != null ? fmt(remaining) : "—";
-      hpInner = remStr + ' <span style="color:var(--text-sub);">/ ' + totalStr + '</span>';
-    }
-    const hpInnerWidth = compact ? "148px" : "240px";
-    tdHp.innerHTML = '<span class="hp-cell-inner" style="width:' + hpInnerWidth + '">' + hpInner + '</span>';
-    tr.appendChild(tdHp);
 
-    // 잔여 %
-    const tdPct = document.createElement("td");
-    const barWrap = (fillStyle, labelHtml) =>
+    const barCell = (fillStyle, labelHtml) =>
       '<div class="hp-pct-cell">' +
         '<div class="hp-bar-wrap">' +
           '<div class="hp-bar-fill" style="' + fillStyle + '"></div>' +
         '</div>' +
         '<span class="hp-pct-text">' + labelHtml + '</span>' +
       '</div>';
+
+    let barHtml;
     if (slain || pct === 0) {
-      tdPct.innerHTML = barWrap(
+      barHtml = barCell(
         'width:100%;background:var(--border);',
         '<span style="color:var(--red);font-weight:700;">0%</span>'
       );
     } else if (pct != null) {
-      tdPct.innerHTML = barWrap(
+      barHtml = barCell(
         'width:' + Math.min(pct, 100).toFixed(1) + '%;background:#f59e0b;',
         pct.toFixed(2) + '%'
       );
     } else {
-      tdPct.textContent = "—";
+      barHtml = '';
     }
-    tr.appendChild(tdPct);
+
+    const totalStr = totalHp ? fmt(totalHp) : "—";
+    let hpNumHtml;
+    if (slain) {
+      hpNumHtml = '<span style="color:var(--red);font-weight:700;">처치</span>' +
+        ' <span style="color:var(--text-sub);">/ ' + totalStr + '</span>';
+    } else {
+      const remStr = remaining != null ? fmt(remaining) : "—";
+      hpNumHtml = remStr + ' <span style="color:var(--text-sub);">/ ' + totalStr + '</span>';
+    }
+
+    tdHp.innerHTML = barHtml + '<div style="margin-top:4px;">' + hpNumHtml + '</div>';
+    tr.appendChild(tdHp);
 
     tbody.appendChild(tr);
   });
@@ -742,7 +750,9 @@ seasonSelect.value = seasonKeys[0];
 
 // ─── 렌더링 ──────────────────────────────────────────────────────
 function renderRaidTable(seasonKey) {
-  const compact   = document.getElementById("compactToggle").checked;
+  const summary   = document.getElementById("summaryToggle").checked;
+  // 요약 모드는 대미지 간략히 ON / 덱 보기 OFF 상태를 강제해서 압축 표시
+  const compact   = summary ? true : document.getElementById("compactToggle").checked;
   const fmt       = compact ? fmtCompact : fmtFull;
   const members   = RAID[seasonKey] || [];
   const thead     = document.getElementById("raidTableHead");
@@ -770,27 +780,38 @@ function renderRaidTable(seasonKey) {
 
   // ── 헤더 구성 ────────────────────────────────────────────────
   const headerRow = document.createElement("tr");
-  const fixedCols = [
-    { label: "#",         width: "40px"  },
-    { label: "닉네임",    width: "160px" },
-    { label: "싱크로레벨", width: "80px"  },
-    { label: "총 대미지",  width: "150px" },
-  ];
-  fixedCols.forEach(({ label, width }) => {
+  const fixedCols = summary
+    ? [{ label: "닉네임", width: "60px", cls: "td-summary" }]
+    : [
+        { label: "#",         width: "40px"  },
+        { label: "닉네임",    width: "160px" },
+        { label: "레벨",      width: "40px", cls: "col-lv" },
+        { label: "총 대미지",  width: "150px" },
+      ];
+  fixedCols.forEach(({ label, width, cls }) => {
     const th = document.createElement("th");
     th.textContent   = label;
     th.style.width    = width;
     th.style.minWidth = width;
+    if (cls) th.className = cls;
     headerRow.appendChild(th);
   });
+  const summaryBossW = summary ? "52px" : null;
   bosses.forEach(([bossName]) => {
     const elem  = getBossElem(bossName);
     const short = shortBossName(bossName);
     const th    = document.createElement("th");
-    th.className = "th-boss";
+    th.className = "th-boss" + (summary ? " td-summary" : "");
     th.title     = bossName;
-    th.innerHTML = short +
-      (elem ? '<br><span class="elem-' + elem + '">[' + elem + ']</span>' : "");
+    if (summary) {
+      th.style.width    = summaryBossW;
+      th.style.minWidth = summaryBossW;
+      th.style.maxWidth = summaryBossW;
+      th.innerHTML = elem ? '<span class="elem-' + elem + '">[' + elem + ']</span>' : short;
+    } else {
+      th.innerHTML = short +
+        (elem ? '<br><span class="elem-' + elem + '">[' + elem + ']</span>' : "");
+    }
     headerRow.appendChild(th);
   });
   thead.appendChild(headerRow);
@@ -826,44 +847,54 @@ function renderRaidTable(seasonKey) {
 
     const tr = document.createElement("tr");
 
-    // 순위
-    const tdRank = document.createElement("td");
-    tdRank.textContent = idx + 1;
-    tr.appendChild(tdRank);
+    if (!summary) {
+      // 순위
+      const tdRank = document.createElement("td");
+      tdRank.textContent = idx + 1;
+      tr.appendChild(tdRank);
+    }
 
     // 닉네임
     const tdName = document.createElement("td");
-    tdName.className   = "td-name";
+    tdName.className   = "td-name" + (summary ? " td-summary" : "");
     tdName.textContent = member.name;
     tr.appendChild(tdName);
 
-    // 싱크로레벨
-    const tdSync = document.createElement("td");
-    tdSync.textContent = syncroLevel;
-    tr.appendChild(tdSync);
+    if (!summary) {
+      // 싱크로레벨
+      const tdSync = document.createElement("td");
+      tdSync.className = "col-lv";
+      tdSync.textContent = syncroLevel;
+      tr.appendChild(tdSync);
 
-    // 총 대미지
-    const tdTotal = document.createElement("td");
-    tdTotal.className   = "td-total";
-    tdTotal.textContent = fmt(lv400 ? member.totalAdj : member.total);
-    tr.appendChild(tdTotal);
+      // 총 대미지
+      const tdTotal = document.createElement("td");
+      tdTotal.className   = "td-total";
+      tdTotal.textContent = fmt(lv400 ? member.totalAdj : member.total);
+      tr.appendChild(tdTotal);
+    }
 
     // 보스별 대미지
-    const showDeck = document.getElementById("deckToggle").checked;
+    const showDeck = document.getElementById("deckToggle").checked && !summary;
     bosses.forEach(([bossName]) => {
       const td    = document.createElement("td");
       const entry = member.raidMap[bossName];
       const elem  = getBossElem(bossName);
+      const elemCls = elem ? "td-boss-" + elem : "td-boss";
       if (entry) {
-        td.className = "td-damage " + (elem ? "td-boss-" + elem : "td-boss");
-        td.innerHTML = entry.hits.map(hit => {
-          const dmgStyle = hit.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
-          return '<span style="font-size:11px;color:var(--text-sub);margin-right:4px;">Lv.' + hit.bossLevel + '</span>' +
-            '<span' + dmgStyle + '>' + fmt(lv400 ? hit.dmgAdj : hit.dmg) + '</span>' +
-            (showDeck ? deckImagesHtml([hit.squad]) : "");
-        }).join('<div style="margin-top:6px;"></div>');
+        td.className = "td-damage " + elemCls + (summary ? " td-summary" : "");
+        if (summary) {
+          td.textContent = fmt(lv400 ? entry.dmgAdj : entry.dmg);
+        } else {
+          td.innerHTML = entry.hits.map(hit => {
+            const dmgStyle = hit.finalHit ? ' style="color:var(--red);font-weight:700;"' : "";
+            return '<span style="font-size:11px;color:var(--text-sub);margin-right:4px;">Lv.' + hit.bossLevel + '</span>' +
+              '<span' + dmgStyle + '>' + fmt(lv400 ? hit.dmgAdj : hit.dmg) + '</span>' +
+              (showDeck ? deckImagesHtml([hit.squad]) : "");
+          }).join('<div style="margin-top:6px;"></div>');
+        }
       } else {
-        td.className   = "td-empty td-boss-empty";
+        td.className   = "td-empty td-boss-empty" + (summary ? " td-summary" : "");
         td.textContent = "";
       }
       tr.appendChild(td);
@@ -877,32 +908,38 @@ function renderRaidTable(seasonKey) {
   tfoot.innerHTML = "";
   const tfr = document.createElement("tr");
 
-  // # 셀 (빈칸)
-  const tfEmpty = document.createElement("td");
-  tfEmpty.textContent = "";
-  tfr.appendChild(tfEmpty);
+  if (!summary) {
+    // # 셀 (빈칸)
+    const tfEmpty = document.createElement("td");
+    tfEmpty.textContent = "";
+    tfr.appendChild(tfEmpty);
+  }
 
   // 닉네임 셀 (빈칸)
   const tfName = document.createElement("td");
+  if (summary) tfName.className = "td-summary";
   tfName.textContent = "";
   tfr.appendChild(tfName);
 
-  // 싱크로레벨 → 평균
-  const validLevels = rows.map(m => syncroMap[m.openId]).filter(v => v != null);
-  const avgLevel = validLevels.length
-    ? (validLevels.reduce((s, v) => s + v, 0) / validLevels.length).toFixed(1)
-    : "—";
-  const tfSync = document.createElement("td");
-  tfSync.innerHTML = avgLevel + '<div class="td-foot-sub">평균</div>';
-  tfr.appendChild(tfSync);
+  if (!summary) {
+    // 싱크로레벨 → 평균
+    const validLevels = rows.map(m => syncroMap[m.openId]).filter(v => v != null);
+    const avgLevel = validLevels.length
+      ? (validLevels.reduce((s, v) => s + v, 0) / validLevels.length).toFixed(1)
+      : "—";
+    const tfSync = document.createElement("td");
+    tfSync.className = "col-lv";
+    tfSync.innerHTML = avgLevel + '<div class="td-foot-sub">평균</div>';
+    tfr.appendChild(tfSync);
 
-  // 총 대미지 → 합산
-  const grandTotal = rows.reduce((s, m) => s + (lv400 ? m.totalAdj : m.total), 0);
-  const tfTotal = document.createElement("td");
-  tfTotal.textContent = fmt(grandTotal);
-  tfr.appendChild(tfTotal);
+    // 총 대미지 → 합산
+    const grandTotal = rows.reduce((s, m) => s + (lv400 ? m.totalAdj : m.total), 0);
+    const tfTotal = document.createElement("td");
+    tfTotal.textContent = fmt(grandTotal);
+    tfr.appendChild(tfTotal);
+  }
 
-  // 보스별 합산 + 참여 인원수
+  // 보스별 합산 (요약 모드에서는 타격 회수 생략)
   bosses.forEach(([bossName]) => {
     const elem  = getBossElem(bossName);
     let sumDmg  = 0;
@@ -912,9 +949,11 @@ function renderRaidTable(seasonKey) {
       if (entry) { sumDmg += lv400 ? entry.dmgAdj : entry.dmg; totalHits += entry.hits.length; }
     });
     const td = document.createElement("td");
-    td.className = elem ? "td-boss-" + elem : "";
+    td.className = (elem ? "td-boss-" + elem : "") + (summary ? " td-summary" : "");
     if (sumDmg) {
-      td.innerHTML = fmt(sumDmg) + '<div class="td-foot-sub">' + totalHits + '회 타격</div>';
+      td.innerHTML = summary
+        ? fmt(sumDmg)
+        : fmt(sumDmg) + '<div class="td-foot-sub">' + totalHits + '회 타격</div>';
     } else {
       td.textContent = "";
     }
@@ -1004,13 +1043,14 @@ function renderBossView(seasonKey) {
     const thead     = document.createElement("thead");
     const headerRow = document.createElement("tr");
     [
-      { label: "#",      width: "34px",  fixed: true  },
-      { label: "닉네임", width: "120px", fixed: true  },
-      { label: "싱크로레벨", width: "80px",  fixed: true  },
+      { label: "#",      width: "30px",  fixed: true  },
+      { label: "닉네임", width: "100px", fixed: true  },
+      { label: "레벨",   width: "40px",  fixed: true, cls: "col-lv" },
       { label: "대미지", width: null,    fixed: false },
-    ].forEach(({ label, width, fixed }) => {
+    ].forEach(({ label, width, fixed, cls }) => {
       const th = document.createElement("th");
       th.textContent = label;
+      if (cls) th.className = cls;
       if (fixed) { th.style.width = width; th.style.minWidth = width; }
       headerRow.appendChild(th);
     });
@@ -1042,6 +1082,7 @@ function renderBossView(seasonKey) {
 
       // 싱크로
       const tdSync = document.createElement("td");
+      tdSync.className = "col-lv";
       tdSync.textContent = syncroLevel;
       tr.appendChild(tdSync);
 
@@ -1071,6 +1112,7 @@ function renderBossView(seasonKey) {
       ? (validLevels.reduce((s, v) => s + v, 0) / validLevels.length).toFixed(1)
       : "—";
     const tfSync = document.createElement("td");
+    tfSync.className = "col-lv";
     tfSync.innerHTML = avgLevel + '<div class="td-foot-sub">평균</div>';
     tfr.appendChild(tfSync);
 
@@ -1335,6 +1377,7 @@ seasonSelect.addEventListener("change", () => {
   renderRank(seasonSelect.value);
 });
 document.getElementById("compactToggle").addEventListener("change", () => renderView(seasonSelect.value));
+document.getElementById("summaryToggle").addEventListener("change", () => renderView(seasonSelect.value));
 document.querySelectorAll('input[name="typeSelect"]').forEach(r =>
   r.addEventListener("change", () => renderView(seasonSelect.value))
 );

@@ -432,6 +432,17 @@
           <select id="memberSelect"></select>
         </label>
         <label>
+          <span>속성</span>
+          <select id="elementSelect">
+            <option value="">전체</option>
+            <option value="전격">전격</option>
+            <option value="작열">작열</option>
+            <option value="풍압">풍압</option>
+            <option value="수냉">수냉</option>
+            <option value="철갑">철갑</option>
+          </select>
+        </label>
+        <label>
           <span>정렬</span>
           <select id="sortSelect">
             <option value="uko">우코</option>
@@ -973,11 +984,12 @@ document.addEventListener("keydown", function(e) {
 
 // ─── 테이블 렌더링 ───────────────────────────────────────────────
 function renderTable() {
-  const filterChar   = charFilterValue;
-  const filterMember = memberSelect.value;
-  const data         = UNION[latestSeason];
-  const tbody        = document.getElementById("shiftTableBody");
-  tbody.innerHTML    = "";
+  const filterChar    = charFilterValue;
+  const filterMember  = memberSelect.value;
+  const filterElement = document.getElementById("elementSelect").value;
+  const data          = UNION[latestSeason];
+  const tbody         = document.getElementById("shiftTableBody");
+  tbody.innerHTML     = "";
   if (!data) return;
 
   // 모든 멤버의 캐릭터를 하나의 배열로 펼치기
@@ -985,9 +997,9 @@ function renderTable() {
   data.members.forEach(member => {
     if (filterMember && member.name !== filterMember) return;
     (CHARACTERS[member.uid] || []).forEach(ch => {
-      if (!filterChar || ch.name === filterChar) {
-        rows.push({ member, ch });
-      }
+      if (filterChar && ch.name !== filterChar) return;
+      if (filterElement && ch.element !== filterElement) return;
+      rows.push({ member, ch });
     });
   });
 
@@ -1092,6 +1104,7 @@ function renderTable() {
 
 // ─── 이벤트 ──────────────────────────────────────────────────────
 memberSelect.addEventListener("change", renderTable);
+document.getElementById("elementSelect").addEventListener("change", renderTable);
 document.getElementById("sortSelect").addEventListener("change", renderTable);
 ["optUko","optAtk","optSum","optAmmo","optCharge","optCritDmg"].forEach(id => {
   document.getElementById(id).addEventListener("change", renderTable);

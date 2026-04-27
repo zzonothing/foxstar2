@@ -480,6 +480,14 @@
             <input type="checkbox" id="optCritDmg">
             <span>크댐</span>
           </label>
+          <label class="opt-check">
+            <input type="checkbox" id="optAtk400">
+            <span>400공</span>
+          </label>
+          <label class="opt-check">
+            <input type="checkbox" id="optAtk40">
+            <span>40공</span>
+          </label>
         </div>
       </div>
 
@@ -503,6 +511,8 @@
               <th id="thAmmo">장탄</th>
               <th id="thCharge">차속</th>
               <th id="thCritDmg">크댐</th>
+              <th id="thAtk400">400공</th>
+              <th id="thAtk40">40공</th>
               <th>소장품</th>
               <th>스킬1</th>
               <th>스킬2</th>
@@ -1025,6 +1035,8 @@ function renderTable() {
   const showAmmo    = document.getElementById("optAmmo").checked;
   const showCharge  = document.getElementById("optCharge").checked;
   const showCritDmg = document.getElementById("optCritDmg").checked;
+  const showAtk400  = document.getElementById("optAtk400").checked;
+  const showAtk40   = document.getElementById("optAtk40").checked;
 
   // 컬럼 헤더 show/hide
   const colToggle = [
@@ -1034,6 +1046,8 @@ function renderTable() {
     { id: "thAmmo",    show: showAmmo    },
     { id: "thCharge",  show: showCharge  },
     { id: "thCritDmg", show: showCritDmg },
+    { id: "thAtk400",  show: showAtk400  },
+    { id: "thAtk40",   show: showAtk40   },
   ];
   colToggle.forEach(({ id, show }) => {
     const el = document.getElementById(id);
@@ -1090,6 +1104,8 @@ function renderTable() {
       (showAmmo   ? '<td class="td-atk">'  + (ch.increaseMaxAmmunitionCapacity    != null ? ch.increaseMaxAmmunitionCapacity.toFixed(2)    + "%" : "—") + '</td>' : '') +
       (showCharge  ? '<td class="td-atk">'  + (ch.increaseChargeSpeed              != null ? ch.increaseChargeSpeed.toFixed(2)              + "%" : "—") + '</td>' : '') +
       (showCritDmg ? '<td class="td-atk">'  + (ch.increaseCriticalDamage           != null ? ch.increaseCriticalDamage.toFixed(2)           + "%" : "—") + '</td>' : '') +
+      (showAtk400  ? '<td class="td-atk">'  + (ch.atk400 != null && ch.atk400 !== 0 ? ch.atk400.toLocaleString()                                        : "—") + '</td>' : '') +
+      (showAtk40   ? '<td class="td-atk">'  + (ch.atk40  != null && ch.atk40  !== 0 ? ch.atk40.toLocaleString()                                         : "—") + '</td>' : '') +
       '<td>' + itemHtml(ch.itemGrade, ch.itemLevel) + '</td>' +
       '<td class="td-skill">' + skillHtml(ch.skill1) + '</td>' +
       '<td class="td-skill">' + skillHtml(ch.skill2) + '</td>' +
@@ -1106,7 +1122,7 @@ function renderTable() {
 memberSelect.addEventListener("change", renderTable);
 document.getElementById("elementSelect").addEventListener("change", renderTable);
 document.getElementById("sortSelect").addEventListener("change", renderTable);
-["optUko","optAtk","optSum","optAmmo","optCharge","optCritDmg"].forEach(id => {
+["optUko","optAtk","optSum","optAmmo","optCharge","optCritDmg","optAtk400","optAtk40"].forEach(id => {
   document.getElementById(id).addEventListener("change", renderTable);
 });
 

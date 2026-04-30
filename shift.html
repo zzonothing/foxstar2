@@ -1022,9 +1022,18 @@ function renderTable() {
     if (sortKey === "sum") return uko + atk;
     return uko; // default: uko
   }
+  function tieBreakerVal(ch) {
+    const uko = ch.increaseElementDamage || 0;
+    const atk = ch.increaseAtk || 0;
+    if (sortKey === "uko") return atk; // 우코 동률 → 공증 내림차순
+    if (sortKey === "atk") return uko; // 공증 동률 → 우코 내림차순
+    return 0;
+  }
   rows.sort((a, b) => {
     const diff = sortVal(b.ch) - sortVal(a.ch);
     if (diff !== 0) return diff;
+    const tieDiff = tieBreakerVal(b.ch) - tieBreakerVal(a.ch);
+    if (tieDiff !== 0) return tieDiff;
     return a.ch.name.localeCompare(b.ch.name, "ko");
   });
 

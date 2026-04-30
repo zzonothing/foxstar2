@@ -473,6 +473,10 @@
             <span>장탄</span>
           </label>
           <label class="opt-check">
+            <input type="checkbox" id="optAmmoApplied">
+            <span>적용장탄</span>
+          </label>
+          <label class="opt-check">
             <input type="checkbox" id="optCharge">
             <span>차속</span>
           </label>
@@ -513,6 +517,7 @@
               <th id="thAtk">공증</th>
               <th id="thSum">우코+공증</th>
               <th id="thAmmo">장탄</th>
+              <th id="thAmmoApplied">적용장탄</th>
               <th id="thCharge">차속</th>
               <th id="thChargeApplied">적용차속</th>
               <th id="thCritDmg">크댐</th>
@@ -1018,6 +1023,27 @@ function calcAppliedChargeSpeed(ch) {
   return total;
 }
 
+// ─── 적용장탄 계산 ───────────────────────────────────────────────
+// 같은 수치의 장탄 증가 옵션끼리 합산 후 (기본 장탄 × 합%) 반올림하고, 그 결과들을 모두 더한다.
+function calcAppliedAmmo(ch) {
+  if (!ch.equipSlots || typeof ch.orgMaxAmmo !== "number" || ch.orgMaxAmmo <= 0) return null;
+  const groups = new Map();
+  ["head", "torso", "arm", "leg"].forEach(part => {
+    const slots = ch.equipSlots[part] || [];
+    slots.forEach(s => {
+      if (s && s.effect === "increaseMaxAmmunitionCapacity" && typeof s.value === "number") {
+        groups.set(s.value, (groups.get(s.value) || 0) + 1);
+      }
+    });
+  });
+  if (groups.size === 0) return null;
+  let total = 0;
+  groups.forEach((count, value) => {
+    total += Math.round(ch.orgMaxAmmo * (value * count) / 100);
+  });
+  return total;
+}
+
 // ─── 테이블 렌더링 ───────────────────────────────────────────────
 function renderTable() {
   const filterChar    = charFilterValue;
@@ -1067,7 +1093,8 @@ function renderTable() {
   const showUko     = document.getElementById("optUko").checked;
   const showAtk     = document.getElementById("optAtk").checked;
   const showSum     = document.getElementById("optSum").checked;
-  const showAmmo    = document.getElementById("optAmmo").checked;
+  const showAmmo          = document.getElementById("optAmmo").checked;
+  const showAmmoApplied   = document.getElementById("optAmmoApplied").checked;
   const showCharge        = document.getElementById("optCharge").checked;
   const showChargeApplied = document.getElementById("optChargeApplied").checked;
   const showCritDmg       = document.getElementById("optCritDmg").checked;
@@ -1080,6 +1107,7 @@ function renderTable() {
     { id: "thAtk",           show: showAtk           },
     { id: "thSum",           show: showSum           },
     { id: "thAmmo",          show: showAmmo          },
+    { id: "thAmmoApplied",   show: showAmmoApplied   },
     { id: "thCharge",        show: showCharge        },
     { id: "thChargeApplied", show: showChargeApplied },
     { id: "thCritDmg",       show: showCritDmg       },
@@ -1139,6 +1167,11 @@ function renderTable() {
         return '<td class="td-uko">' + (uko || atk ? sum.toFixed(2) + "%" : "—") + '</td>';
       })() +
       (showAmmo   ? '<td class="td-atk">'  + (ch.increaseMaxAmmunitionCapacity    != null ? ch.increaseMaxAmmunitionCapacity.toFixed(2)    + "%" : "—") + '</td>' : '') +
+      (function() {
+        if (!showAmmoApplied) return '';
+        const v = calcAppliedAmmo(ch);
+        return '<td class="td-atk">' + (v != null && v > 0 ? "+" + v : "—") + '</td>';
+      })() +
       (showCharge  ? '<td class="td-atk">'  + (ch.increaseChargeSpeed              != null ? ch.increaseChargeSpeed.toFixed(2)              + "%" : "—") + '</td>' : '') +
       (function() {
         if (!showChargeApplied) return '';
@@ -1164,7 +1197,7 @@ function renderTable() {
 memberSelect.addEventListener("change", renderTable);
 document.getElementById("elementSelect").addEventListener("change", renderTable);
 document.getElementById("sortSelect").addEventListener("change", renderTable);
-["optUko","optAtk","optSum","optAmmo","optCharge","optChargeApplied","optCritDmg","optAtk400","optAtk40"].forEach(id => {
+["optUko","optAtk","optSum","optAmmo","optAmmoApplied","optCharge","optChargeApplied","optCritDmg","optAtk400","optAtk40"].forEach(id => {
   document.getElementById(id).addEventListener("change", renderTable);
 });
 

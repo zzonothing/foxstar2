@@ -477,6 +477,10 @@
             <span>차속</span>
           </label>
           <label class="opt-check">
+            <input type="checkbox" id="optChargeApplied">
+            <span>적용차속</span>
+          </label>
+          <label class="opt-check">
             <input type="checkbox" id="optCritDmg">
             <span>크댐</span>
           </label>
@@ -510,6 +514,7 @@
               <th id="thSum">우코+공증</th>
               <th id="thAmmo">장탄</th>
               <th id="thCharge">차속</th>
+              <th id="thChargeApplied">적용차속</th>
               <th id="thCritDmg">크댐</th>
               <th id="thAtk400">400공</th>
               <th id="thAtk40">40공</th>
@@ -992,6 +997,27 @@ document.addEventListener("keydown", function(e) {
   if (e.key === "Escape") closeEquipModal();
 });
 
+// ─── 적용차속 계산 ───────────────────────────────────────────────
+// 같은 수치의 차속 옵션끼리 합산 후 반올림하고, 그 결과들을 모두 더한다.
+function calcAppliedChargeSpeed(ch) {
+  if (!ch.equipSlots) return null;
+  const groups = new Map(); // value → 개수
+  ["head", "torso", "arm", "leg"].forEach(part => {
+    const slots = ch.equipSlots[part] || [];
+    slots.forEach(s => {
+      if (s && s.effect === "increaseChargeSpeed" && typeof s.value === "number") {
+        groups.set(s.value, (groups.get(s.value) || 0) + 1);
+      }
+    });
+  });
+  if (groups.size === 0) return null;
+  let total = 0;
+  groups.forEach((count, value) => {
+    total += Math.round(value * count);
+  });
+  return total;
+}
+
 // ─── 테이블 렌더링 ───────────────────────────────────────────────
 function renderTable() {
   const filterChar    = charFilterValue;
@@ -1042,21 +1068,23 @@ function renderTable() {
   const showAtk     = document.getElementById("optAtk").checked;
   const showSum     = document.getElementById("optSum").checked;
   const showAmmo    = document.getElementById("optAmmo").checked;
-  const showCharge  = document.getElementById("optCharge").checked;
-  const showCritDmg = document.getElementById("optCritDmg").checked;
-  const showAtk400  = document.getElementById("optAtk400").checked;
-  const showAtk40   = document.getElementById("optAtk40").checked;
+  const showCharge        = document.getElementById("optCharge").checked;
+  const showChargeApplied = document.getElementById("optChargeApplied").checked;
+  const showCritDmg       = document.getElementById("optCritDmg").checked;
+  const showAtk400        = document.getElementById("optAtk400").checked;
+  const showAtk40         = document.getElementById("optAtk40").checked;
 
   // 컬럼 헤더 show/hide
   const colToggle = [
-    { id: "thUko",     show: showUko     },
-    { id: "thAtk",     show: showAtk     },
-    { id: "thSum",     show: showSum     },
-    { id: "thAmmo",    show: showAmmo    },
-    { id: "thCharge",  show: showCharge  },
-    { id: "thCritDmg", show: showCritDmg },
-    { id: "thAtk400",  show: showAtk400  },
-    { id: "thAtk40",   show: showAtk40   },
+    { id: "thUko",           show: showUko           },
+    { id: "thAtk",           show: showAtk           },
+    { id: "thSum",           show: showSum           },
+    { id: "thAmmo",          show: showAmmo          },
+    { id: "thCharge",        show: showCharge        },
+    { id: "thChargeApplied", show: showChargeApplied },
+    { id: "thCritDmg",       show: showCritDmg       },
+    { id: "thAtk400",        show: showAtk400        },
+    { id: "thAtk40",         show: showAtk40         },
   ];
   colToggle.forEach(({ id, show }) => {
     const el = document.getElementById(id);
@@ -1112,6 +1140,11 @@ function renderTable() {
       })() +
       (showAmmo   ? '<td class="td-atk">'  + (ch.increaseMaxAmmunitionCapacity    != null ? ch.increaseMaxAmmunitionCapacity.toFixed(2)    + "%" : "—") + '</td>' : '') +
       (showCharge  ? '<td class="td-atk">'  + (ch.increaseChargeSpeed              != null ? ch.increaseChargeSpeed.toFixed(2)              + "%" : "—") + '</td>' : '') +
+      (function() {
+        if (!showChargeApplied) return '';
+        const v = calcAppliedChargeSpeed(ch);
+        return '<td class="td-atk">' + (v != null && v > 0 ? v + "%" : "—") + '</td>';
+      })() +
       (showCritDmg ? '<td class="td-atk">'  + (ch.increaseCriticalDamage           != null ? ch.increaseCriticalDamage.toFixed(2)           + "%" : "—") + '</td>' : '') +
       (showAtk400  ? '<td class="td-atk">'  + (ch.atk400 != null && ch.atk400 !== 0 ? ch.atk400.toLocaleString()                                        : "—") + '</td>' : '') +
       (showAtk40   ? '<td class="td-atk">'  + (ch.atk40  != null && ch.atk40  !== 0 ? ch.atk40.toLocaleString()                                         : "—") + '</td>' : '') +
@@ -1131,7 +1164,7 @@ function renderTable() {
 memberSelect.addEventListener("change", renderTable);
 document.getElementById("elementSelect").addEventListener("change", renderTable);
 document.getElementById("sortSelect").addEventListener("change", renderTable);
-["optUko","optAtk","optSum","optAmmo","optCharge","optCritDmg","optAtk400","optAtk40"].forEach(id => {
+["optUko","optAtk","optSum","optAmmo","optCharge","optChargeApplied","optCritDmg","optAtk400","optAtk40"].forEach(id => {
   document.getElementById(id).addEventListener("change", renderTable);
 });
 
